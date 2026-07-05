@@ -1,0 +1,23 @@
+# Secrets — never commit; use .env.example as the template
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Tooling / caches
+.codegraph/
+
+# IDE
+.idea/
+.vscode/
+
+# Node (this is a Python backend; these were installed by mistake)
+node_modules/
+package.json
+package-lock.json

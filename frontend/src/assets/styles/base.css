@@ -1,0 +1,30 @@
+/* src/assets/styles/base.css */
+
+/* 简单 reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+/* 页面基础字体 & 背景色，偏极简 */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: white;
+  color: #111827;
+}
+
+/* 让按钮默认没有浏览器自带样式 */
+button {
+  font: inherit;
+}
+
