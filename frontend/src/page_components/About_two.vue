@@ -333,4 +333,59 @@ defineExpose({
   animation: revealBlur 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   animation-delay: 0.4s;
 }
+
+@media (max-width: 900px) {
+  .about-two {
+    min-height: 100svh;
+  }
+
+  .about-two-content {
+    width: 100%;
+    max-width: 680px;
+    gap: 40px;
+    padding: 96px 20px 72px;
+  }
+
+  .carousel {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+  }
+
+  .carousel-btn {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  .carousel-btn-prev {
+    left: 8px;
+  }
+
+  .carousel-btn-next {
+    right: 8px;
+  }
+
+  .carousel-dots {
+    bottom: -28px;
+  }
+
+  .about-two-desc {
+    margin-top: 8px;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-scale,
+  .reveal-scale.animate,
+  .reveal-blur,
+  .reveal-blur.animate {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+}
 </style>

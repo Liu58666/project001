@@ -1307,4 +1307,21 @@ onMounted(() => {
 .btn.ghost {
   border-color: rgba(0, 0, 0, 0.2);
 }
+
+@media (max-width: 900px) {
+  .broadcast-page { padding: 104px 16px 250px; }
+  .page-title { font-size: clamp(36px, 10vw, 48px); }
+  .role-chips { flex-wrap: wrap; }
+  .role-chip { min-height: 44px; }
+  .user-selector { padding: 14px; }
+  .modal-overlay { padding: 8px; }
+  .modal-container { width: 100%; max-height: calc(100svh - 16px); border-radius: 12px; }
+  .modal-header, .modal-footer { padding: 14px; }
+  .modal-footer { flex-wrap: wrap; }
+  .history-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .history-bottom { flex-wrap: wrap; gap: 10px; }
+  .bottom-inner { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px; }
+  .bottom-right { width: 100%; flex-wrap: wrap; }
+  .bottom-bar .btn { flex: 1 1 120px; min-height: 44px; }
+}
 </style>

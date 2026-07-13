@@ -439,4 +439,22 @@ onMounted(() => {
   50% { transform: scaleX(0.3); }
   100% { transform: scaleX(1.05); }
 }
+
+@media (max-width: 900px) {
+  .career-page { padding: 104px 20px 64px; }
+  .career-header { margin-bottom: 40px; }
+  .career-title { font-size: clamp(44px, 12vw, 60px); }
+  .career-subtitle { font-size: 16px; }
+  .career-card { align-items: flex-start; gap: 18px; padding: 24px 20px; border-radius: 16px; }
+  .card-icon { width: 60px; height: 60px; border-radius: 16px; }
+  .card-title { font-size: 21px; }
+  .card-arrow { align-self: center; }
+  .career-footer { margin-top: 40px; }
+}
+
+@media (max-width: 520px) {
+  .career-card { flex-direction: column; }
+  .card-arrow { display: none; }
+  .card-features { gap: 8px 14px; }
+}
 </style>

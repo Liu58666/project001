@@ -1743,5 +1743,22 @@ async function publish() {
   color: rgba(0, 0, 0, 0.35);
   font-size: 16px;
 }
+
+@media (max-width: 900px) {
+  .preview-page { padding: 104px 16px 280px; }
+  .meta-bar { flex-direction: column; align-items: stretch; gap: 18px; }
+  .meta-field { width: 100%; }
+  .hero-meta { flex-wrap: wrap; gap: 8px 14px; }
+  .hero-title { font-size: clamp(38px, 11vw, 54px); line-height: 1.04; }
+  .hero-dek { font-size: 17px; line-height: 1.6; }
+  .divider { margin: 40px 0; }
+  .editor-toolbar { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; }
+  .toolbar-btn { flex: 0 0 auto; min-height: 42px; }
+  .word-editor { padding: 18px 14px; }
+  .images-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bottom-inner { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px; }
+  .bottom-right { width: 100%; flex-wrap: wrap; }
+  .bottom-bar .btn { flex: 1 1 120px; min-height: 44px; }
+}
 </style>
 

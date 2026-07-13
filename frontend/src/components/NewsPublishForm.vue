@@ -341,6 +341,14 @@ const paragraphCount = computed(() => {
   box-shadow: none !important;
 }
 
+@media (max-width: 640px) {
+  .np__section { padding: 14px; border-radius: 14px; }
+  .np__grid { grid-template-columns: 1fr; }
+  .np__field--span2 { grid-column: auto; }
+  .np__actions { align-items: stretch; }
+  .np__btn { width: 100%; min-height: 44px; }
+}
+
 </style>
 
 

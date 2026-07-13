@@ -573,4 +573,60 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
 }
 
+@media (max-width: 900px) {
+  .cta-section {
+    padding-top: 48px;
+  }
+
+  .cta-band {
+    height: 100%;
+  }
+
+  .cta-container {
+    min-height: 460px;
+    padding: 48px 20px;
+  }
+
+  .cta-content {
+    gap: 18px;
+    margin-bottom: 0;
+  }
+
+  .cta-preheadline {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .cta-headline {
+    margin-top: 12px;
+    font-size: clamp(32px, 9vw, 44px);
+    line-height: 1.12;
+  }
+
+  .cta-buttons {
+    width: 100%;
+    max-width: 420px;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .btn-try,
+  .btn-talk {
+    width: 100%;
+    min-height: 50px;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-slide,
+  .fade-in-slide.animate {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+}
+
 </style>

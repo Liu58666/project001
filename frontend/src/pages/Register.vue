@@ -785,4 +785,15 @@ onBeforeUnmount(() => {
   text-underline-offset: 4px;
 }
 
+@media (max-width: 900px) {
+  .register-page { display: block; min-height: 100svh; background: linear-gradient(160deg, #ffffff 45%, #fdf2f8 100%); }
+  .right-panel { display: none; }
+  .left-panel { min-height: 100svh; padding: 104px 20px 56px; }
+  .form-shell { width: min(440px, 100%); padding: 28px 20px; border-radius: 22px; background: rgba(255, 255, 255, 0.9); box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1); }
+  .title { font-size: 26px; }
+  .phone-group { align-items: stretch; flex-direction: column; gap: 0; }
+  .send-code-btn { width: 100%; min-width: 0; min-height: 46px; margin-bottom: 12px; }
+  .primary-btn { min-height: 48px; }
+}
+
 </style>

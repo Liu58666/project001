@@ -486,7 +486,7 @@ onMounted(async () => {
 
 @media (max-width: 640px) {
   .resume-pdf-page {
-    padding: 80px 16px 100px;
+    padding: 104px 16px 130px;
   }
   
   .page-title {
@@ -506,5 +506,9 @@ onMounted(async () => {
     justify-content: flex-end;
     margin-top: 8px;
   }
+
+  .upload-zone { padding: 28px 18px; }
+  .bottom-bar { padding: 14px 16px; }
+  .bottom-bar .btn { width: 100%; min-height: 44px; }
 }
 </style>

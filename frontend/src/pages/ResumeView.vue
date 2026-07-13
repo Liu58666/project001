@@ -464,4 +464,20 @@ onMounted(() => {
   border: 1px solid #000000;
   color: #000000;
 }
+
+@media (max-width: 900px) {
+  .resume-container { padding: 104px 20px 220px; }
+  .avatar-circle { width: 112px; height: 112px; }
+  .hero-title { font-size: clamp(38px, 11vw, 54px); }
+  .hero-dek { margin-top: 18px; font-size: 17px; }
+  .hero-dept { font-size: 16px; }
+  .divider { margin: 40px 0 22px; }
+  .info-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .info-value { overflow-wrap: anywhere; }
+  .bio-text { font-size: 17px; line-height: 1.75; }
+  .bottom-bar { padding: 0; }
+  .bottom-inner { align-items: stretch; flex-direction: column; gap: 14px; padding: 16px 20px; }
+  .bottom-right { width: 100%; }
+  .bottom-right .btn { flex: 1 1 auto; min-height: 44px; }
+}
 </style>

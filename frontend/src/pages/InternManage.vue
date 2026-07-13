@@ -1096,4 +1096,20 @@ onMounted(() => {
   transform: scale(0.95);
   opacity: 0;
 }
+
+@media (max-width: 900px) {
+  .manage-page { padding: 104px 16px 72px; }
+  .back-link { top: 78px; left: 16px; }
+  .page-title { font-size: clamp(36px, 10vw, 48px); }
+  .filter-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .filter-tab { flex: 0 0 auto; min-height: 44px; }
+  .app-row-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .app-row-right { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
+  .app-info { grid-template-columns: 1fr; gap: 12px; }
+  .app-actions { flex-direction: column; align-items: stretch; }
+  .app-actions .btn { width: 100%; min-height: 44px; }
+  .pdf-overlay { padding: 8px; }
+  .pdf-modal { width: 100%; height: calc(100svh - 16px); border-radius: 12px; }
+  .pdf-modal-header { flex-wrap: wrap; gap: 10px; padding: 14px; }
+}
 </style>

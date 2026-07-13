@@ -240,6 +240,11 @@ watch(newsId, () => {
   transform: none !important;
   box-shadow: none !important;
 }
+
+@media (max-width: 640px) {
+  .nd__actions { flex-direction: column; align-items: stretch; }
+  .nd__btn { width: 100%; min-height: 44px; }
+}
 </style>
 
 

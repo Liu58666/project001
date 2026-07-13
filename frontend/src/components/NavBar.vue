@@ -12,37 +12,56 @@
     </div>
 
     <!-- 中间导航菜单（整体居中） -->
-    <nav class="menu">
+    <nav
+      id="primary-navigation"
+      :class="['menu', { 'menu--open': isMobileMenuOpen }]"
+      :aria-label="t('nav.primaryNavigation')"
+    >
       <!-- SOLUTIONS 下拉 -->
       <div class="menu-item menu-item--dropdown">
-        <button class="menu-link">
+        <button
+          class="menu-link"
+          type="button"
+          :aria-expanded="activeMobileDropdown === 'solutions'"
+          @click="toggleMobileDropdown('solutions')"
+        >
           {{ t('nav.solutions') }} <span class="plus">+</span>
         </button>
-        <div class="dropdown dropdown--solutions">
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="router.push('/coming-soon')">{{ t('nav.solutionsByIndustry') }}</a>
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="router.push('/coming-soon')">{{ t('nav.solutionsByScenario') }}</a>
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="router.push('/coming-soon')">{{ t('nav.solutionsCustom') }}</a>
+        <div :class="['dropdown', 'dropdown--solutions', { 'dropdown--open': activeMobileDropdown === 'solutions' }]">
+          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.solutionsByIndustry') }}</a>
+          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.solutionsByScenario') }}</a>
+          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.solutionsCustom') }}</a>
         </div>
       </div>
 
       <!-- TECHNOLOGY 下拉 -->
       <div class="menu-item menu-item--dropdown">
-        <button class="menu-link">
+        <button
+          class="menu-link"
+          type="button"
+          :aria-expanded="activeMobileDropdown === 'technology'"
+          @click="toggleMobileDropdown('technology')"
+        >
           {{ t('nav.technology') }} <span class="plus">+</span>
         </button>
-        <div class="dropdown dropdown--technology">
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="router.push('/coming-soon')">{{ t('nav.technologyPlatform') }}</a>
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="router.push('/coming-soon')">{{ t('nav.technologyAgents') }}</a>
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="router.push('/coming-soon')">{{ t('nav.technologyRag') }}</a>
+        <div :class="['dropdown', 'dropdown--technology', { 'dropdown--open': activeMobileDropdown === 'technology' }]">
+          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.technologyPlatform') }}</a>
+          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.technologyAgents') }}</a>
+          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.technologyRag') }}</a>
         </div>
       </div>
 
       <!-- LANGUAGES：hover 弹出可选项 -->
       <div class="menu-item menu-item--dropdown menu-item--lang">
-        <button class="menu-link" type="button">
+        <button
+          class="menu-link"
+          type="button"
+          :aria-expanded="activeMobileDropdown === 'languages'"
+          @click="toggleMobileDropdown('languages')"
+        >
           {{ t('nav.languages') }} <span class="plus">+</span>
         </button>
-        <div class="dropdown dropdown--lang" role="menu" aria-label="Languages">
+        <div :class="['dropdown', 'dropdown--lang', { 'dropdown--open': activeMobileDropdown === 'languages' }]" role="menu" aria-label="Languages">
           <button
             class="dropdown-item dropdown-item--btn"
             type="button"
@@ -66,27 +85,36 @@
 
       <!-- COMPANY 下拉 -->
       <div class="menu-item menu-item--dropdown">
-        <button class="menu-link">
+        <button
+          class="menu-link"
+          type="button"
+          :aria-expanded="activeMobileDropdown === 'company'"
+          @click="toggleMobileDropdown('company')"
+        >
           {{ t('nav.company') }} <span class="plus">+</span>
         </button>
-        <div class="dropdown dropdown--company">
-          <a href="/about" class="dropdown-item" @click.prevent="router.push('/about')">{{ t('nav.companyAbout') }}</a>
-          <a href="/team" class="dropdown-item" @click.prevent="router.push('/team')">{{ t('nav.companyTeam') }}</a>
-          <a href="/career" class="dropdown-item" @click.prevent="router.push('/career')">{{ t('nav.companyCareers') }}</a>
-          <a href="/news" class="dropdown-item" @click.prevent="router.push('/news')">{{ t('nav.companyNews') }}</a>
+        <div :class="['dropdown', 'dropdown--company', { 'dropdown--open': activeMobileDropdown === 'company' }]">
+          <a href="/about" class="dropdown-item" @click.prevent="navigateTo('/about')">{{ t('nav.companyAbout') }}</a>
+          <a href="/team" class="dropdown-item" @click.prevent="navigateTo('/team')">{{ t('nav.companyTeam') }}</a>
+          <a href="/career" class="dropdown-item" @click.prevent="navigateTo('/career')">{{ t('nav.companyCareers') }}</a>
+          <a href="/news" class="dropdown-item" @click.prevent="navigateTo('/news')">{{ t('nav.companyNews') }}</a>
         </div>
       </div>
 
       <!-- DOCS 普通项 -->
       <div class="menu-item">
-        <button class="menu-link" @click="router.push('/coming-soon')">{{ t('nav.docs') }}</button>
+        <button class="menu-link" type="button" @click="navigateTo('/coming-soon')">{{ t('nav.docs') }}</button>
       </div>
+
+      <button class="mobile-contact" type="button" @click="navigateTo('/career/join')">
+        {{ t('nav.contactUs') }}
+      </button>
     </nav>
 
     <!-- 右侧：Contact Us + Search + Login -->
     <div class="nav-actions">
       <!-- Contact Us 按钮 -->
-      <button class="btn-12" @click="router.push('/career/join')">
+      <button class="btn-12" @click="navigateTo('/career/join')">
         <span>{{ t('nav.contactUs') }}</span>
       </button>
 
@@ -106,6 +134,17 @@
         </label>
       </div>
 
+      <!-- 手机端语言快捷切换：显示目标语言，点击后直接切换 -->
+      <button
+        class="mobile-language-toggle"
+        type="button"
+        :aria-label="i18n.locale === 'zh' ? t('nav.languageEnglish') : t('nav.languageChinese')"
+        :title="i18n.locale === 'zh' ? t('nav.languageEnglish') : t('nav.languageChinese')"
+        @click="selectLocale(i18n.locale === 'zh' ? 'en' : 'zh')"
+      >
+        {{ i18n.locale === 'zh' ? 'EN' : '中' }}
+      </button>
+
       <!-- Login/User 图标 -->
       <button
         class="login-icon"
@@ -122,12 +161,33 @@
           </div>
         </template>
       </button>
+
+      <button
+        class="menu-toggle"
+        type="button"
+        :aria-expanded="isMobileMenuOpen"
+        aria-controls="primary-navigation"
+        :aria-label="isMobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')"
+        @click="toggleMobileMenu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
+
+    <button
+      v-if="isMobileMenuOpen"
+      class="menu-backdrop"
+      type="button"
+      :aria-label="t('nav.closeMenu')"
+      @click="closeMobileMenu"
+    ></button>
   </header>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, inject, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useI18nStore } from '@/stores/i18n'
@@ -139,6 +199,8 @@ const emit = defineEmits(['navigate-home'])
 const showLoaderFor = inject('showLoaderFor', null)
 
 const isScrolled = ref(false)
+const isMobileMenuOpen = ref(false)
+const activeMobileDropdown = ref(null)
 
 const t = (key, vars) => i18n.t(key, vars)
 
@@ -157,6 +219,7 @@ const userInitial = computed(() => {
 const userPhoto = computed(() => userStore.photo || '')
 
 const handleUserClick = () => {
+  closeMobileMenu()
   if (isLoggedIn.value) {
     // 已登录，跳转到用户页面
     router.push('/user')
@@ -171,10 +234,40 @@ const handleScroll = () => {
 }
 
 const handleLogoClick = () => {
+  closeMobileMenu()
   emit('navigate-home')
 }
 
+const navigateTo = (path) => {
+  closeMobileMenu()
+  router.push(path)
+}
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+  if (!isMobileMenuOpen.value) activeMobileDropdown.value = null
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+  activeMobileDropdown.value = null
+}
+
+const toggleMobileDropdown = (name) => {
+  if (window.innerWidth > 900) return
+  activeMobileDropdown.value = activeMobileDropdown.value === name ? null : name
+}
+
+const handleResize = () => {
+  if (window.innerWidth > 900) closeMobileMenu()
+}
+
+const handleKeydown = (event) => {
+  if (event.key === 'Escape') closeMobileMenu()
+}
+
 const selectLocale = (nextLocale) => {
+  closeMobileMenu()
   const run = () => i18n.setLocale(nextLocale)
   if (typeof showLoaderFor === 'function') {
     showLoaderFor(1000, run)
@@ -187,10 +280,19 @@ const selectLocale = (nextLocale) => {
 onMounted(() => {
   handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('resize', handleResize, { passive: true })
+  window.addEventListener('keydown', handleKeydown)
+})
+
+watch(isMobileMenuOpen, (isOpen) => {
+  document.body.style.overflow = isOpen ? 'hidden' : ''
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', handleResize)
+  window.removeEventListener('keydown', handleKeydown)
+  document.body.style.overflow = ''
 })
 </script>
 
@@ -318,8 +420,9 @@ onBeforeUnmount(() => {
   gap: 8px;
 
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
   z-index: 1002;
 }
 
@@ -384,6 +487,14 @@ onBeforeUnmount(() => {
 /* hover 触发 */
 .menu-item--dropdown:hover .dropdown {
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.menu-item--dropdown:focus-within .dropdown {
+  opacity: 1;
+  visibility: visible;
   pointer-events: auto;
   transform: translate(-50%, 0);
 }
@@ -404,6 +515,13 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 24px;
+}
+
+.menu-toggle,
+.mobile-language-toggle,
+.mobile-contact,
+.menu-backdrop {
+  display: none;
 }
 
 .login-icon {
@@ -622,5 +740,236 @@ onBeforeUnmount(() => {
 .wave-group .input:focus ~ .bar:before,
 .wave-group .input:focus ~ .bar:after {
   width: 50%;
+}
+
+@media (max-width: 900px) {
+  .nav {
+    height: 68px;
+    padding: 0 16px;
+    grid-template-columns: 1fr auto;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(14px);
+  }
+
+  .logo-wrapper {
+    margin-left: 0;
+  }
+
+  .logo {
+    height: 62px;
+  }
+
+  .logo:hover {
+    transform: translateY(2px);
+  }
+
+  .menu {
+    position: fixed;
+    top: 68px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1002;
+    display: flex;
+    max-height: calc(100dvh - 68px);
+    padding: 12px 20px 28px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-self: stretch;
+    gap: 0;
+    overflow-y: auto;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-12px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  }
+
+  .menu--open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .menu-item {
+    width: 100%;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .menu-item--lang {
+    display: none;
+  }
+
+  .menu-item--dropdown::before {
+    display: none;
+  }
+
+  .menu-link {
+    display: flex;
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 4px;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    text-align: left;
+  }
+
+  .menu-link:hover {
+    transform: none;
+  }
+
+  .menu-link[aria-expanded='true'] .plus {
+    opacity: 1;
+    transform: rotate(45deg);
+  }
+
+  .dropdown {
+    position: static;
+    min-width: 0;
+    max-width: none;
+    max-height: 0;
+    padding: 0 8px;
+    gap: 2px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    opacity: 1;
+    visibility: hidden;
+    pointer-events: none;
+    transform: none;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  .dropdown--open {
+    max-height: 360px;
+    padding: 0 8px 12px;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .menu-item--dropdown:hover .dropdown {
+    transform: none;
+  }
+
+  .menu-item--dropdown:focus-within .dropdown:not(.dropdown--open) {
+    max-height: 0;
+    padding: 0 8px;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .dropdown-item {
+    min-height: 44px;
+    padding: 11px 12px;
+    white-space: normal;
+  }
+
+  .mobile-contact {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 20px;
+    border: 0;
+    border-radius: 999px;
+    background: #111827;
+    color: #ffffff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .nav-actions {
+    gap: 10px;
+  }
+
+  .nav-actions .btn-12,
+  .wave-group {
+    display: none;
+  }
+
+  .login-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .mobile-language-toggle {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: rgba(17, 24, 39, 0.68);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+
+  .mobile-language-toggle:active {
+    transform: scale(0.94);
+  }
+
+  .menu-toggle {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .menu-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 999px;
+    background: #111827;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .menu-toggle[aria-expanded='true'] span:first-child {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .menu-toggle[aria-expanded='true'] span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .menu-toggle[aria-expanded='true'] span:last-child {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  .menu-backdrop {
+    position: fixed;
+    inset: 68px 0 0;
+    z-index: 1001;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: rgba(15, 23, 42, 0.38);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .dropdown,
+  .menu-toggle span {
+    transition: none;
+  }
 }
 </style>

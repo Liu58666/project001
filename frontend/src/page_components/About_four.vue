@@ -300,4 +300,63 @@ defineExpose({
   animation: revealFromRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   animation-delay: 0.3s;
 }
+
+@media (max-width: 900px) {
+  .about-four {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .about-four-content {
+    width: 100%;
+    max-width: 680px;
+    padding: 96px 20px 72px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+  }
+
+  .about-four-text {
+    width: 100%;
+    max-width: none;
+    gap: 14px;
+  }
+
+  .about-four-title {
+    margin-top: 0;
+    font-size: clamp(34px, 10vw, 44px);
+  }
+
+  .about-four-desc {
+    max-width: none;
+    margin-top: 0;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .about-four-carousel {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  .carousel-btn {
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-left,
+  .reveal-left.animate,
+  .reveal-right,
+  .reveal-right.animate {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+}
 </style>

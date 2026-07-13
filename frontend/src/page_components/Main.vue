@@ -660,5 +660,130 @@ let timer = null
     font-weight: 500;
     color: #111827;
   }
+
+@media (max-width: 900px) {
+  .hero {
+    padding: 112px 20px 64px;
+  }
+
+  .hero::after {
+    height: 120px;
+  }
+
+  .hero-bg-video {
+    top: 0;
+    height: 100%;
+  }
+
+  .hero-inner {
+    width: 100%;
+    max-width: 680px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 48px;
+    padding-inline: 0;
+  }
+
+  .hero-left {
+    min-width: 0;
+    gap: 16px;
+    margin-top: 0;
+  }
+
+  .hero-newscard {
+    max-width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .hero-title {
+    max-width: 12ch;
+    font-size: clamp(38px, 11vw, 52px);
+    line-height: 1.06;
+  }
+
+  .hero-subtitle {
+    margin-top: 4px;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    min-height: 48px;
+    padding: 12px 16px;
+    justify-content: center;
+  }
+
+  .hero-right {
+    min-width: 0;
+    gap: 28px;
+  }
+
+  .device-shot {
+    height: clamp(260px, 78vw, 360px);
+  }
+
+  .device-img {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+    object-fit: cover !important;
+    object-position: left top !important;
+  }
+
+  .apollo-badge {
+    width: 88px;
+    height: 88px;
+    border-radius: 22px;
+    font-size: 12px;
+  }
+
+  .pos-right {
+    right: 14px;
+    top: 14px;
+  }
+
+  .pos-left {
+    left: 14px;
+    top: 14px;
+  }
+
+  .hero-features {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .feature-item {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 6px 12px;
+  }
+
+  .feature-line {
+    grid-column: 1 / -1;
+  }
+
+  .feature-index {
+    font-size: 13px;
+  }
+
+  .feature-title {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
   
   </style>

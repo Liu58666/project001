@@ -1366,4 +1366,23 @@ onMounted(() => {
   background: #fee2e2;
   color: #dc2626;
 }
+
+@media (max-width: 900px) {
+  .apply-page { padding: 104px 16px 64px; }
+  .apply-container { width: 100%; }
+  .back-btn { top: 78px; }
+  .apply-title { font-size: clamp(38px, 10vw, 52px); }
+  .apply-subtitle { font-size: 16px; }
+  .apply-form, .content { width: 100%; }
+  .info-row { flex-direction: column; gap: 18px; }
+  .info-field, .info-field--auto, .info-field--full { width: 100%; min-width: 0; }
+  .segment-control { width: 100%; flex-wrap: wrap; }
+  .segment-btn { flex: 1 1 120px; min-height: 44px; }
+  .form-actions { align-items: stretch; flex-direction: column; }
+  .submit-btn, .primary-btn, .success-btn { width: 100%; min-height: 48px; }
+  .pdf-upload-zone { padding: 28px 18px; }
+  .pdf-file-card { align-items: flex-start; gap: 12px; }
+  .pdf-file-name { white-space: normal; overflow-wrap: anywhere; }
+  .success-page, .submitted-notice { padding-inline: 18px; }
+}
 </style>

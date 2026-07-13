@@ -789,5 +789,21 @@ async function doDelete() {
   cursor: not-allowed;
 }
 
+@media (max-width: 900px) {
+  .news-page { padding: 104px 16px 240px; }
+  .news-title { font-size: clamp(42px, 12vw, 58px); line-height: 1.04; }
+  .menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .menu .link { justify-content: center; min-height: 44px; padding: 10px 12px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 14px; padding-bottom: 32px; }
+  .delete-inner { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px; }
+  .delete-right { width: 100%; }
+  .delete-bar .btn { width: 100%; min-height: 44px; }
+  .delete-confirm { text-align: center; }
+}
+
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
 </style>
 

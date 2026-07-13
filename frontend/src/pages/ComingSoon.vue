@@ -137,4 +137,10 @@ onMounted(() => {
   opacity: 1;
   transform: translateY(0);
 }
+
+@media (max-width: 900px) {
+  .coming-soon-page { min-height: 100svh; padding: 104px 20px 56px; }
+  .title { font-size: clamp(38px, 11vw, 48px); }
+  .back-btn { width: 100%; justify-content: center; min-height: 48px; }
+}
 </style>

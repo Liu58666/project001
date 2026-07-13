@@ -143,7 +143,8 @@
   <style scoped>
   .end-page {
     padding: 80px 8vw;
-    min-width: 1500px;
+    width: 100%;
+    min-width: 0;
     background: #ffffff;
     color: #000;
     font-family: "Inter", system-ui, sans-serif;
@@ -471,5 +472,94 @@
     filter: invert(1);
     transform: translate(10px, -6px);
   }
+
+  @media (max-width: 900px) {
+    .end-page {
+      width: 100%;
+      min-width: 0;
+      padding: 64px 20px 32px;
+    }
+
+    .subscribe-row {
+      margin-bottom: 32px;
+      transform: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 20px;
+    }
+
+    .subscribe-title {
+      font-size: 24px;
+      line-height: 1.3;
+      transform: none;
+    }
+
+    .subscribe-input {
+      width: 100%;
+      min-height: 50px;
+    }
+
+    .subscribe-input input {
+      min-width: 0;
+    }
+
+    .subscribe-btn {
+      min-width: 58px;
+    }
+
+    hr,
+    hr:first-of-type {
+      margin: 32px 0;
+    }
+
+    .footer-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 32px 20px;
+      margin-bottom: 32px;
+    }
+
+    .logo-col {
+      grid-column: 1 / -1;
+    }
+
+    .card {
+      width: 160px;
+      height: 160px;
+      border-radius: 24px;
+    }
+
+    .card .logo-img {
+      width: 80px;
+    }
+
+    .col-title {
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+
+    .col li {
+      min-height: 36px;
+      margin-bottom: 8px;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .social-row {
+      margin-left: 0;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    .social-icons {
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .icon-round {
+      width: 42px;
+      height: 42px;
+    }
+  }
   </style>
-  

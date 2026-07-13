@@ -46,6 +46,7 @@ const isAnimating = ref(false)
 
 let lastWheelTime = 0
 const wheelThrottle = 800 // 翻页动画节流时间
+let mobileMediaQuery = null
 
 // ====== About 2/3/4 远程图片预加载（提前缓存，避免首次进入时闪动/布局跳变）======
 const ABOUT_IMG_BASE = 'https://pages-1327732770.cos.ap-guangzhou.myqcloud.com/about'
@@ -91,6 +92,7 @@ const preconnectAboutHost = () => {
 }
 
 const handleWheel = (e) => {
+  if (mobileMediaQuery?.matches) return
   e.preventDefault()
   
   const now = Date.now()
@@ -139,6 +141,7 @@ const goToPage = (page) => {
 
 // 键盘支持
 const handleKeydown = (e) => {
+  if (mobileMediaQuery?.matches) return
   if (e.key === 'ArrowDown' || e.key === 'PageDown') {
     e.preventDefault()
     if (currentPage.value < totalPages - 1) {
@@ -152,7 +155,25 @@ const handleKeydown = (e) => {
   }
 }
 
+const syncSectionVisibility = () => {
+  const sectionRefs = [aboutTwoRef.value, aboutThreeRef.value, aboutFourRef.value]
+
+  if (mobileMediaQuery?.matches) {
+    sectionRefs.forEach((sectionRef) => sectionRef?.show?.())
+    return
+  }
+
+  sectionRefs.forEach((sectionRef, index) => {
+    if (currentPage.value === index + 1) sectionRef?.show?.()
+    else sectionRef?.hide?.()
+  })
+}
+
 onMounted(() => {
+  mobileMediaQuery = window.matchMedia('(max-width: 900px)')
+  mobileMediaQuery.addEventListener('change', syncSectionVisibility)
+  requestAnimationFrame(syncSectionVisibility)
+
   const wrapper = wrapperRef.value
   if (wrapper) {
     wrapper.addEventListener('wheel', handleWheel, { passive: false })
@@ -165,6 +186,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  mobileMediaQuery?.removeEventListener('change', syncSectionVisibility)
+  mobileMediaQuery = null
+
   const wrapper = wrapperRef.value
   if (wrapper) {
     wrapper.removeEventListener('wheel', handleWheel)
@@ -227,5 +251,28 @@ onBeforeUnmount(() => {
 .indicator.active {
   background: #000;
   border-color: #000;
+}
+
+@media (max-width: 900px) {
+  .about-wrapper {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+
+  .about-container {
+    transform: none !important;
+    transition: none;
+  }
+
+  .about-section {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .page-indicators {
+    display: none;
+  }
 }
 </style>

@@ -596,6 +596,23 @@ watch(
   color: #ffffff;
 }
 
+@media (max-width: 900px) {
+  .news-page { padding: 104px 20px 64px; }
+  .news-title { font-size: clamp(44px, 12vw, 60px); }
+  .news-subtitle { margin-bottom: 30px; font-size: 16px; }
+  .news-controls { margin-bottom: 36px; }
+  .menu { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .link, .link.active, .link:hover, .link:focus-visible { width: 100%; min-height: 44px; }
+  .link::before { transform: translateX(0); background: #eeeeee; }
+  .link-title, .link:hover .link-title, .link:focus-visible .link-title { opacity: 1; transform: none; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 18px; }
+  .card { max-width: none; }
+}
+
+@media (max-width: 560px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 </style>
 
 

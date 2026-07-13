@@ -614,5 +614,28 @@ const letters = computed(() =>
     background: #353535;
   }
 }
+
+@media (max-width: 640px) {
+  .loader-inner {
+    width: 100%;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .socket {
+    width: 132px;
+    height: 132px;
+    transform: scale(0.52);
+  }
+
+  .loader-wrap-heading .load-text {
+    font-size: clamp(34px, 12vw, 52px);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+}
 </style>
 

@@ -3242,6 +3242,32 @@
     filter: blur(0);
   }
 
+  @media (max-width: 900px) {
+    .bg-video-right { display: none; }
+    .sidebar { width: min(320px, calc(100vw - 24px)); padding: 28px 20px; }
+    .content { min-width: 0; padding: 104px 16px 56px; }
+    .content::before, .content::after { width: 220px; height: 220px; }
+    .content-header { padding-bottom: 18px; }
+    .content-title { margin: 0; font-size: clamp(34px, 10vw, 44px); }
+    .content-subtitle { margin: 10px 0 0; font-size: 15px; }
+    .panel, .panel-inner { width: 100%; min-width: 0; }
+    .panel-inner { padding: 20px 16px; border-radius: 18px; }
+    .info-card { align-items: flex-start; padding: 16px; }
+    .info-value, .info-sub { overflow-wrap: anywhere; }
+    .msg-filter-tabs { width: 100%; overflow-x: auto; }
+    .msg-filter-tab { flex: 1 0 auto; min-height: 44px; }
+    .msg-item { padding: 16px 14px; }
+    .msg-item-header, .msg-item-footer { align-items: flex-start; flex-direction: column; gap: 10px; }
+    .msg-item-actions { width: 100%; flex-wrap: wrap; }
+    .msg-item-action, .msg-item-delete { min-height: 40px; }
+    .modal-layer { padding: 16px; }
+    .modal { width: 100%; max-height: calc(100svh - 32px); padding: 22px 18px; }
+    .modal-actions { align-items: stretch; flex-direction: column-reverse; }
+    .modal-btn { width: 100%; min-height: 44px; }
+    .date-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .stepper-content { min-width: 0; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .float-in {
       transition: none;
@@ -3251,4 +3277,3 @@
     }
   }
   </style>
-  

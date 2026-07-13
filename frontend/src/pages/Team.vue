@@ -685,4 +685,24 @@ onMounted(() => {
   margin: 0;
   font-size: 13px;
 }
+
+@media (max-width: 900px) {
+  .team-page { padding: 104px 20px 64px; }
+  .team-header { margin-bottom: 36px; }
+  .team-title { font-size: clamp(44px, 12vw, 60px); }
+  .team-subtitle { font-size: 16px; }
+  .team-content { gap: 36px; }
+  .section-header { gap: 14px; margin-bottom: 20px; }
+  .members-row { gap: 14px; }
+  .member-card { width: calc(50% - 7px); padding: 16px; }
+  .modal-layer { padding: 16px; }
+  .profile-modal { padding: 40px 20px 24px; }
+}
+
+@media (max-width: 560px) {
+  .member-card { width: 100%; }
+  .member-avatar { width: 56px; height: 56px; }
+  .profile-field { gap: 20px; }
+  .field-value { text-align: right; overflow-wrap: anywhere; }
+}
 </style>

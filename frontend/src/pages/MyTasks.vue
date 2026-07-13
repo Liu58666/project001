@@ -716,4 +716,20 @@ onMounted(() => {
 .btn.ghost {
   border-color: rgba(0, 0, 0, 0.2);
 }
+
+@media (max-width: 900px) {
+  .my-tasks-page { padding: 104px 16px 220px; }
+  .page-title { font-size: clamp(36px, 10vw, 48px); }
+  .filter-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .filter-tab { flex: 0 0 auto; min-height: 44px; }
+  .task-card { padding: 16px; }
+  .task-card-content { align-items: flex-start; gap: 12px; }
+  .task-icon { width: 40px; height: 40px; flex-basis: 40px; }
+  .task-top { align-items: flex-start; flex-wrap: wrap; }
+  .task-title { white-space: normal; overflow-wrap: anywhere; }
+  .task-bottom { flex-wrap: wrap; gap: 10px; }
+  .bottom-inner { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px; }
+  .bottom-right { width: 100%; flex-wrap: wrap; }
+  .bottom-bar .btn { flex: 1 1 120px; min-height: 44px; }
+}
 </style>

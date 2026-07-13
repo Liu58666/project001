@@ -932,4 +932,18 @@ onMounted(() => {
 .preview-close:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+@media (max-width: 900px) {
+  .task-detail-page { padding: 104px 16px 230px; }
+  .page-title { font-size: clamp(32px, 9vw, 40px); overflow-wrap: anywhere; }
+  .task-meta { flex-wrap: wrap; gap: 8px 14px; }
+  .status-card { align-items: flex-start; padding: 16px; }
+  .submission-textarea { min-height: 180px; }
+  .images-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bottom-inner { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px; }
+  .bottom-right { width: 100%; flex-wrap: wrap; }
+  .bottom-bar .btn { flex: 1 1 120px; min-height: 44px; }
+  .preview-overlay { padding: 12px; }
+  .preview-close { top: 10px; right: 10px; background: rgba(0, 0, 0, 0.55); }
+}
 </style>

@@ -827,6 +827,20 @@ async function onShare() {
   color: rgba(17, 24, 39, 0.55);
   text-align: center;
 }
+
+@media (max-width: 900px) {
+  .detail-page { padding: 104px 20px 64px; }
+  .back-btn { top: 78px; }
+  .hero-meta { flex-wrap: wrap; gap: 8px 12px; margin-bottom: 20px; font-size: 14px; }
+  .hero-title { font-size: clamp(36px, 10vw, 52px); line-height: 1.08; }
+  .hero-dek { margin-top: 20px; font-size: 17px; line-height: 1.65; }
+  .divider { margin: 36px 0 14px; }
+  .actions { margin-bottom: 30px; }
+  .para { font-size: 16px; line-height: 1.75; }
+  .hero-cover { margin-top: 28px; border-radius: 12px; }
+  .content-figure { margin: 22px 0; }
+  .nf-title { font-size: 34px; }
+}
 </style>
 
 

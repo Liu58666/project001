@@ -175,4 +175,39 @@ onMounted(() => {
   animation: revealBlur 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   animation-delay: 0.5s;
 }
+
+@media (max-width: 900px) {
+  .about-page {
+    min-height: 100svh;
+  }
+
+  .about-content {
+    min-height: 100svh;
+    padding: 112px 20px 64px;
+  }
+
+  .about-title {
+    margin-bottom: 16px;
+    font-size: clamp(48px, 15vw, 72px);
+    line-height: 1.02;
+  }
+
+  .about-subtitle {
+    margin-top: 12px;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-scale,
+  .reveal-scale.animate,
+  .reveal-blur,
+  .reveal-blur.animate {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+}
 </style>

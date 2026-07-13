@@ -1279,4 +1279,16 @@ onMounted(() => {
 @keyframes sweep-white {
   to { transform: translateX(0); }
 }
+
+@media (max-width: 900px) {
+  .login-page { display: block; min-height: 100svh; }
+  .left-panel { display: none; }
+  .right-panel { min-height: 100svh; padding: 104px 20px 56px; background: linear-gradient(160deg, #ffffff 45%, #f3e8ff 100%); }
+  .form-shell { width: min(440px, 100%); padding: 28px 20px; border-radius: 22px; background: rgba(255, 255, 255, 0.88); box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1); }
+  .title { font-size: 26px; }
+  .form-row { align-items: flex-start; flex-direction: column; }
+  .primary-btn { min-height: 48px; }
+  .final-center { width: calc(100% - 40px); }
+  .transition-overlay .final-center .welcome-name { font-size: clamp(48px, 16vw, 88px); }
+}
 </style>

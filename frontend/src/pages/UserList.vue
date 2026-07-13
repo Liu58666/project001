@@ -1154,4 +1154,23 @@ onMounted(() => {
 .custom-select-option svg {
   color: #000000;
 }
+
+@media (max-width: 900px) {
+  .user-list-page { padding: 104px 16px 190px; }
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: clamp(36px, 10vw, 46px); }
+  .search-input-wrapper { max-width: none; }
+  .user-card { align-items: flex-start; padding: 15px 14px; }
+  .user-arrow { align-self: center; }
+  .pagination { padding: 12px 8px; flex-wrap: wrap; }
+  .page-numbers { max-width: 100%; margin: 0; overflow-x: auto; }
+  .page-btn.nav-btn { padding: 0 12px; }
+  .bottom-inner { align-items: stretch; flex-direction: column; gap: 12px; padding: 14px 16px; }
+  .bottom-right { width: 100%; }
+  .bottom-right .btn { width: 100%; min-height: 44px; }
+  .modal-layer { padding: 16px; }
+  .modal { width: 100%; max-height: calc(100svh - 32px); }
+  .modal-footer { align-items: stretch; flex-direction: column-reverse; }
+  .modal-footer .btn { width: 100%; min-height: 44px; }
+}
 </style>

@@ -172,4 +172,53 @@ defineExpose({
   animation: revealFromRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   animation-delay: 0.3s;
 }
+
+@media (max-width: 900px) {
+  .about-three {
+    min-height: 100svh;
+  }
+
+  .about-three-content {
+    width: 100%;
+    max-width: 680px;
+    padding: 96px 20px 72px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+  }
+
+  .about-three-image,
+  .about-three-text {
+    width: 100%;
+    max-width: none;
+  }
+
+  .about-three-text {
+    gap: 14px;
+  }
+
+  .about-three-title {
+    margin-top: 0;
+    font-size: clamp(34px, 10vw, 44px);
+  }
+
+  .about-three-desc {
+    max-width: none;
+    margin-top: 0;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-left,
+  .reveal-left.animate,
+  .reveal-right,
+  .reveal-right.animate {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+}
 </style>

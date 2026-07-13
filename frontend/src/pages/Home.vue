@@ -18,6 +18,9 @@ import End from '@/page_components/End.vue'
 .home-page {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 </style>
 

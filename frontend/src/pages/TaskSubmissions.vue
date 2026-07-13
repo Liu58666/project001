@@ -1321,4 +1321,28 @@ onMounted(async () => {
   cursor: pointer;
 }
 .preview-close:hover { background: rgba(255, 255, 255, 0.2); }
+
+@media (max-width: 900px) {
+  .submissions-page { padding: 104px 16px 230px; }
+  .page-title { font-size: clamp(36px, 10vw, 48px); overflow-wrap: anywhere; }
+  .stats-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stat-item { min-width: 0; }
+  .filter-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .filter-tab { flex: 0 0 auto; min-height: 44px; }
+  .submission-card { padding: 16px; }
+  .submission-card-content { align-items: flex-start; gap: 12px; }
+  .submission-top { flex-wrap: wrap; align-items: flex-start; }
+  .submission-bottom { flex-direction: column; align-items: stretch; gap: 12px; }
+  .bottom-inner { flex-direction: column; align-items: stretch; gap: 14px; padding: 16px; }
+  .bottom-right { width: 100%; flex-wrap: wrap; }
+  .bottom-bar .btn { flex: 1 1 120px; min-height: 44px; }
+  .modal-overlay { padding: 8px; }
+  .modal-container { width: 100%; max-height: calc(100svh - 16px); border-radius: 12px; }
+  .modal-header, .modal-footer { padding: 14px; }
+  .score-row { flex-direction: column; align-items: stretch; }
+  .modal-actions { flex-direction: column; }
+  .modal-actions .btn { width: 100%; min-height: 44px; }
+  .preview-overlay { padding: 12px; }
+  .preview-close { top: 10px; right: 10px; background: rgba(0, 0, 0, 0.55); }
+}
 </style>

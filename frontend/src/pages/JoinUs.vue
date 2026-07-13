@@ -565,4 +565,25 @@ onMounted(() => {
 .back-btn:hover svg {
   transform: translateX(-4px);
 }
+
+@media (max-width: 900px) {
+  .join-page { padding: 104px 20px 64px; }
+  .join-header { margin-bottom: 36px; }
+  .join-title { font-size: clamp(40px, 11vw, 52px); }
+  .join-subtitle { font-size: 16px; }
+  .intro-section, .positions-section, .benefits-section { margin-bottom: 48px; }
+  .position-card { gap: 16px; padding: 22px 18px; }
+  .position-icon { width: 48px; height: 48px; margin-top: 0; }
+  .benefits-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .benefit-card { padding: 20px 12px; }
+  .contact-card { align-items: stretch; flex-direction: column; gap: 24px; padding: 24px 20px; }
+  .contact-right { align-items: stretch; flex-direction: column; gap: 12px; }
+  .contact-email { min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .copy-btn { min-height: 44px; }
+}
+
+@media (max-width: 480px) {
+  .position-card { flex-direction: column; }
+  .benefits-grid { grid-template-columns: minmax(0, 1fr); }
+}
 </style>

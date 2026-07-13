@@ -1027,4 +1027,21 @@ onMounted(async () => {
   background: rgba(0, 0, 0, 0.06);
   border-color: #000000;
 }
+
+@media (max-width: 900px) {
+  .resume-container { padding: 104px 20px 260px; }
+  .meta-bar, .info-row { align-items: stretch; flex-direction: column; gap: 18px; }
+  .hero-title { font-size: clamp(38px, 11vw, 54px); }
+  .hero-dek { margin-top: 18px; font-size: 17px; }
+  .avatar-circle { width: 112px; height: 112px; }
+  .divider { margin: 40px 0 22px; }
+  .section-label { font-size: 17px; }
+  .editor-toolbar { overflow-x: auto; flex-wrap: nowrap; }
+  .toolbar-btn { flex: 0 0 auto; min-height: 42px; }
+  .word-editor { padding: 18px 14px; }
+  .bottom-inner { align-items: stretch; flex-direction: column; gap: 14px; padding: 16px 20px; }
+  .bottom-right { width: 100%; flex-wrap: wrap; }
+  .toggle-group { width: 100%; justify-content: space-between; margin-right: 0; }
+  .bottom-right .btn { flex: 1 1 130px; min-height: 44px; }
+}
 </style>
