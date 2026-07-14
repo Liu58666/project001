@@ -120,6 +120,72 @@ const MESSAGES = {
         desc: 'Launch an AI-native platform that orchestrates data, models, and agents across your enterprise.',
       },
     },
+    technologyPage: {
+      kicker: 'AI-NATIVE INFRASTRUCTURE',
+      titleLine1: 'Keep building.',
+      titleLine2: 'Make AI real.',
+      intro:
+        'Enterprise AI becomes valuable when data, models, agents, and platforms work as one system. DAIL Tech connects these layers so intelligence can move from an experiment into reliable, governed, everyday operations.',
+      explore: 'Explore our technology',
+      moreHardQuestions: 'Listen to more hard questions',
+      scroll: 'Scroll',
+      mapKicker: 'THE DAIL TECHNOLOGY STACK',
+      mapTitle: 'DAIL Tech is built for real-world intelligence.',
+      mapInstruction:
+        'We connect governed data, engineered models, dependable agents, and enterprise platforms to move AI from possibility into daily operations.',
+      openDetail: 'View capability',
+      closeDetail: 'Close capability details',
+      detailPlaceholder: 'Select a capability to reveal its framework.',
+      topics: {
+        'data-governance': {
+          title: 'Data Governance',
+          summary:
+            'We turn fragmented enterprise data into a trusted foundation that AI systems can retrieve, understand, and use with clear ownership and controls.',
+          point1: 'Source integration and data cataloguing',
+          point2: 'Quality, lineage, and permission controls',
+          point3: 'Knowledge bases and retrieval pipelines',
+          point4: 'Compliance-ready data operations',
+        },
+        'model-engineering': {
+          title: 'Model Engineering',
+          summary:
+            'We select, adapt, evaluate, and operate the right models for each workflow instead of forcing every business problem through a single model.',
+          point1: 'Model selection and scenario evaluation',
+          point2: 'Fine-tuning and domain adaptation',
+          point3: 'Inference optimization and deployment',
+          point4: 'Continuous quality and safety evaluation',
+        },
+        'agent-development': {
+          title: 'Agent Development',
+          summary:
+            'We package AI capabilities into dependable agents that understand context, use tools, coordinate work, and stay accountable to people.',
+          point1: 'Workflow and tool orchestration',
+          point2: 'Multi-agent collaboration patterns',
+          point3: 'Human review and intervention points',
+          point4: 'Traceable execution and feedback loops',
+        },
+        'platform-build': {
+          title: 'Platform Build',
+          summary:
+            'We connect data, models, and agents through an AI-native platform that teams can govern, observe, and extend across the enterprise.',
+          point1: 'Unified access and identity controls',
+          point2: 'Agent and model lifecycle management',
+          point3: 'Observability, cost, and risk monitoring',
+          point4: 'Composable APIs and business integrations',
+        },
+      },
+    },
+    nemoOne: {
+      eyebrow: 'NEMO ONE / MEDICAL EDGE',
+      titleLine1: 'AI should live',
+      titleLine2: 'where care happens.',
+      description:
+        'Local AI hardware and Nemo AIOS bring intelligence into the healthcare environment as one integrated system.',
+      ariaLabel: 'Nemo One medical AI system showcase',
+    },
+    companyTransition: {
+      title: 'AI, where it matters.',
+    },
     cta: {
       preheadline: 'MAKING AI + INDUSTRY REAL',
       headlineLine1: 'Power real industries, workflows,',
@@ -426,6 +492,66 @@ const MESSAGES = {
         title: '平台构建',
         desc: '上线 AI 原生平台，在企业范围内编排数据、模型与智能体。',
       },
+    },
+    technologyPage: {
+      kicker: 'AI 原生基础设施',
+      titleLine1: '持续构建。',
+      titleLine2: '让 AI 落地。',
+      intro:
+        '企业 AI 的价值，来自数据、模型、智能体与平台作为一个整体协同运行。DAIL Tech 打通这些层级，让智能能力从实验验证走向可靠、可治理的日常业务。',
+      explore: '探索我们的技术',
+      moreHardQuestions: '探索更多技术问题',
+      scroll: '向下滚动',
+      mapKicker: 'DAIL 技术体系',
+      mapTitle: 'DAIL Tech 为真实世界的智能而构建。',
+      mapInstruction: '我们连接可信数据、工程化模型、可靠智能体与企业平台，让 AI 从可能性走进真实的日常业务。',
+      openDetail: '查看能力',
+      closeDetail: '关闭能力详情',
+      detailPlaceholder: '请选择一项能力，展开对应的技术框架。',
+      topics: {
+        'data-governance': {
+          title: '数据治理',
+          summary: '将分散的企业数据转化为可信的 AI 基础，让系统能够在明确的数据归属、权限和质量控制下检索、理解并使用数据。',
+          point1: '多源数据接入与数据目录',
+          point2: '数据质量、血缘与权限控制',
+          point3: '知识库与检索增强管道',
+          point4: '面向合规的数据运营体系',
+        },
+        'model-engineering': {
+          title: '模型工程',
+          summary: '根据具体业务流程选择、适配、评估和运行合适的模型，而不是用单一模型处理所有企业问题。',
+          point1: '模型选型与场景评测',
+          point2: '微调训练与领域适配',
+          point3: '推理优化与部署交付',
+          point4: '持续质量和安全评估',
+        },
+        'agent-development': {
+          title: '智能体开发',
+          summary: '将 AI 能力封装为可靠的智能体，使其能够理解上下文、调用工具、协调任务，并始终接受人员监督。',
+          point1: '业务工作流与工具编排',
+          point2: '多智能体协作模式',
+          point3: '人工复核与干预节点',
+          point4: '可追溯执行与反馈闭环',
+        },
+        'platform-build': {
+          title: '平台构建',
+          summary: '通过 AI 原生平台连接数据、模型与智能体，使企业能够统一治理、观测并持续扩展智能能力。',
+          point1: '统一访问与身份权限控制',
+          point2: '智能体和模型生命周期管理',
+          point3: '运行观测、成本与风险监控',
+          point4: '可组合 API 与业务系统集成',
+        },
+      },
+    },
+    nemoOne: {
+      eyebrow: 'NEMO ONE / MEDICAL EDGE',
+      titleLine1: '医疗 AI，',
+      titleLine2: '运行在医疗现场。',
+      description: '本地 AI 硬件与 Nemo AIOS，软硬一体进入医疗现场。',
+      ariaLabel: 'Nemo One 医疗 AI 一体机展示',
+    },
+    companyTransition: {
+      title: '让 AI，真正进入现场。',
     },
     cta: {
       preheadline: '让 AI + 产业真正落地',

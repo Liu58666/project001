@@ -24,6 +24,8 @@ import TaskDetail from '@/pages/TaskDetail.vue'
 import TaskSubmissions from '@/pages/TaskSubmissions.vue'
 import ComingSoon from '@/pages/ComingSoon.vue'
 import JoinUs from '@/pages/JoinUs.vue'
+import Technology from '@/pages/Technology.vue'
+import TechnologyTopic from '@/pages/TechnologyTopic.vue'
 
 const routes = [
   { path: '/', name: 'home', component: Home },
@@ -32,6 +34,8 @@ const routes = [
   { path: '/career', name: 'career', component: Career },
   { path: '/career/intern-apply', name: 'intern-apply', component: InternApply },
   { path: '/career/join', name: 'join-us', component: JoinUs },
+  { path: '/technology', name: 'technology', component: Technology },
+  { path: '/technology/:topicId', name: 'technology-topic', component: TechnologyTopic },
   { path: '/news', name: 'news', component: News },
   { path: '/news/preview', name: 'news-preview', component: PreviewNews },
   { path: '/news/delete', name: 'news-delete', component: DeleteNews },

@@ -48,8 +48,10 @@ project001/
 
 公开官网页面：
 
-- `/` → `Home.vue`：首页容器，按顺序组合 `page_components/Main.vue`、`Second.vue`、`Third.vue`、`End.vue`。
+- `/` → `Home.vue`：首页容器，按顺序组合 `page_components/Main.vue`、`Second.vue`、`NemoOneShowcase.vue`、`CompanyOrbitTransition.vue`、`Third.vue`、`End.vue`；其中 Nemo One 区块使用单张主产品图、边缘渐隐、轻微漂浮和高光扫过形成动态展示，随后由滚轮驱动的公司图片圆盘和白色扩散完成到白色 CTA 区的过渡。
 - `/about` → `About.vue`：关于页，组合 `About_one.vue` 到 `About_four.vue`。
+- `/technology` → `Technology.vue`：AI 原生技术体系页面；同一全屏深色纯文字关系图也由首页 `Second.vue` 直接复用，展示数据治理、模型工程、智能体开发和平台构建。
+- `/technology/:topicId` → `TechnologyTopic.vue`：四项技术能力的独立纯白详情页，使用大标题与简短介绍，并复用全局顶部导航和 `End.vue` 页尾；进入页面时序号、逐字/逐词标题、说明和按钮按顺序从下方浮现，直接打开页面时等待全局 Loader 完成后播放；`Listen to more hard questions` 按钮进入已有 `/coming-soon` 开发中页面。
 - `/team` → `Team.vue`：从公开简历目录加载团队成员，按角色分组并进入个人公开简历。
 - `/career` → `Career.vue`：招聘入口，根据登录状态和角色决定进入实习申请等页面。
 - `/career/intern-apply` → `InternApply.vue`：实习申请表及 PDF 简历上传；直接调用申请 API。
@@ -259,3 +261,6 @@ python -m uvicorn app.main:app --reload
 - 2026-07-13：首页 `Main.vue`、`Second.vue`、`Third.vue`、`End.vue` 已完成 `900px` 响应式适配；手机端使用单列内容、完整能力卡片、纵向 CTA 和双列页脚，桌面端保留原有多栏布局。
 - 2026-07-13：关于页面 `About.vue` 及 `About_one.vue` 到 `About_four.vue` 已完成 `900px` 响应式适配；手机和平板改为四区块自然纵向滚动，桌面继续使用原有全屏翻页和页面指示器。
 - 2026-07-13：前端其余公开、认证、招聘、个人中心、简历、新闻管理、实习审核、站内消息和任务系统页面均已补齐移动端响应式布局；统一以 `900px` 为主断点，窄屏表单、卡片、弹窗和固定操作栏改为单列或可滚动布局，桌面端原布局保持不变。
+- 2026-07-13：首页原 `Second.vue` AI 原生能力卡片区已直接替换为 `Technology.vue` 的深色纯文字关系图，首页与 `/technology` 复用同一实现，不再要求先点击入口；区块首次进入视口后，全屏深色层通过中央横向圆角矩形遮罩自动缓慢打开，不再绑定滚轮进度，随后用四条直线连接数据治理、模型工程、智能体开发和平台构建；向下浏览不会收回，只有页面返回顶部才平滑收回到首次打开时的中央黑色圆角框，中央文案始终保留，并允许下次重新播放；四个能力标题统一为白色，已移除中央眉题、装饰方框和标题下边框，关系图外层使用纯白背景；点击能力节点进入 `/technology/:topicId` 独立详情页，详情页使用纯白大标题布局并保留顶部导航与 `End.vue` 页尾。
+- 2026-07-14：首页在 `Second.vue` 与 `Third.vue` 之间新增 `NemoOneShowcase.vue` 产品介绍区；Technology 关系图保留从中央黑色圆角矩形向全屏扩散的入场效果，外层使用白色承接面保证动画可见，展开后的关系图与 Nemo One 均为纯黑并无缝衔接；Nemo One 取消多图转圈、进度条、sticky 和超长滚动空间，只保留单张主产品图，通过边缘渐隐、轻微漂浮、蓝色环境光和周期高光形成动态效果，并保留中英文文案、`900px` 移动端布局、减少动画降级及区块内深色导航外观。
+- 2026-07-14：首页在 `NemoOneShowcase.vue` 与 `Third.vue` 之间新增 `CompanyOrbitTransition.vue`；当前试验版桌面端使用约 132vh 的纯黑全屏 sticky 场景，固定大小的中央 Logo 上方展示中英文总结标题；标题和 Logo 不做透明度消失，而由横向拉伸、中心错位的多层冷白径向雾光从背景下方扩散并覆盖；雾光层持续到滚动末段，纯白兜底只在最后约 10% 出现，以减少进入 `Third.vue` 前的大面积空白停留；圆弧照片及其代码仍完整保留，但当前通过 `showPhotos=false` 关闭显示；`900px` 以下仍暂时隐藏该区块。

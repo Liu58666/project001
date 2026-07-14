@@ -45,9 +45,9 @@
           {{ t('nav.technology') }} <span class="plus">+</span>
         </button>
         <div :class="['dropdown', 'dropdown--technology', { 'dropdown--open': activeMobileDropdown === 'technology' }]">
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.technologyPlatform') }}</a>
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.technologyAgents') }}</a>
-          <a href="/coming-soon" class="dropdown-item" @click.prevent="navigateTo('/coming-soon')">{{ t('nav.technologyRag') }}</a>
+          <a href="/technology?topic=platform-build" class="dropdown-item" @click.prevent="navigateTo('/technology?topic=platform-build')">{{ t('nav.technologyPlatform') }}</a>
+          <a href="/technology?topic=agent-development" class="dropdown-item" @click.prevent="navigateTo('/technology?topic=agent-development')">{{ t('nav.technologyAgents') }}</a>
+          <a href="/technology?topic=data-governance" class="dropdown-item" @click.prevent="navigateTo('/technology?topic=data-governance')">{{ t('nav.technologyRag') }}</a>
         </div>
       </div>
 
@@ -616,58 +616,35 @@ onBeforeUnmount(() => {
   font-weight: 800;
   line-height: 1.45;
   margin: 0;
-  -webkit-mask-image: -webkit-radial-gradient(#000, #fff);
-  mask-image: radial-gradient(#000, #fff);
   padding: 0;
   text-transform: uppercase;
 
   border-radius: 99rem;
   border: none; /* 移除默认白色边框 */
+  outline: none;
   overflow: hidden;
   padding: 0.6rem 1.4rem;
   position: relative;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .btn-12 span {
-  mix-blend-mode: difference;
+  position: relative;
+  z-index: 1;
+  mix-blend-mode: normal;
 }
 
-.btn-12:after,
-.btn-12:before {
-  background: linear-gradient(
-    90deg,
-    #fff 25%,
-    transparent 0,
-    transparent 50%,
-    #fff 0,
-    #fff 75%,
-    transparent 0
-  );
-  content: '';
-  inset: 0;
-  position: absolute;
-  transform: translateY(var(--progress, 100%));
-  transition: transform 0.2s ease;
-}
-
+.btn-12:before,
 .btn-12:after {
-  --progress: -100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0,
-    transparent 25%,
-    #fff 0,
-    #fff 50%,
-    transparent 0,
-    transparent 75%,
-    #fff 0
-  );
-  z-index: -1;
+  content: none;
+  display: none;
 }
 
-.btn-12:hover:after,
-.btn-12:hover:before {
-  --progress: 0;
+.btn-12:hover {
+  border: 0;
+  background-color: #ffffff;
+  color: #000000;
+  box-shadow: none;
 }
 
 /* ============ Search 输入框（改成 Search） ============ */
