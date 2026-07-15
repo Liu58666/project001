@@ -105,6 +105,7 @@ let hasAnimated = false
 let inputListenersAttached = false
 let interactionZoneActive = false
 let lastScrollY = 0
+let lastTouchY = null
 
 const prefersReducedMotion = () => (
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -135,17 +136,27 @@ function setInputCapture(active) {
   if (active && !inputListenersAttached) {
     window.addEventListener('wheel', handleWheelSignal, { passive: false })
     window.addEventListener('keydown', handleKeySignal)
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    window.addEventListener('touchend', handleTouchEnd, { passive: true })
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: true })
     inputListenersAttached = true
   } else if (!active && inputListenersAttached) {
     window.removeEventListener('wheel', handleWheelSignal)
     window.removeEventListener('keydown', handleKeySignal)
+    window.removeEventListener('touchstart', handleTouchStart)
+    window.removeEventListener('touchmove', handleTouchMove)
+    window.removeEventListener('touchend', handleTouchEnd)
+    window.removeEventListener('touchcancel', handleTouchEnd)
+    lastTouchY = null
     inputListenersAttached = false
   }
 }
 
 function syncInputCapture() {
   const shouldCapture = usesPinnedExperience() && (
-    expansionGateActive.value
+    interactionZoneActive
+    || expansionGateActive.value
     || branchRetreatActive.value
   )
   setInputCapture(shouldCapture)
@@ -330,28 +341,109 @@ function selectTopic(topic) {
   router.push({ name: 'technology-topic', params: { topicId: topic.id } })
 }
 
-function handleWheelSignal(event) {
-  if (event.deltaY <= 0) return
+function preventForwardInput(event) {
+  if (event.cancelable) event.preventDefault()
+}
 
+function handleForwardIntent(event, forwardDistance) {
   if (expansionGateActive.value || branchRetreatActive.value) {
-    event.preventDefault()
+    preventForwardInput(event)
+    return true
   }
+
+  if (
+    !interactionZoneActive
+    || !expansionComplete.value
+    || branchesRetreated.value
+  ) return false
+
+  const page = pageRef.value
+  if (!page) return false
+
+  const viewportHeight = window.innerHeight || 1
+  const rect = page.getBoundingClientRect()
+  const stillPinned = rect.top <= 1 && rect.bottom >= viewportHeight - 1
+  if (!stillPinned) return false
+
+  const pinnedDistance = Math.max(0, -rect.top)
+  const retreatTriggerDistance = viewportHeight * RETREAT_TRIGGER_VIEWPORT_RATIO
+  const remainingDistance = Math.max(0, retreatTriggerDistance - pinnedDistance)
+  if (forwardDistance < remainingDistance) return false
+
+  preventForwardInput(event)
+  if (remainingDistance > 1) {
+    window.scrollTo({
+      top: window.scrollY + remainingDistance,
+      behavior: 'instant',
+    })
+  }
+  startBranchRetreat()
+  return true
+}
+
+function handleWheelSignal(event) {
+  if (event.deltaY <= 0 || event.ctrlKey) return
+
+  const deltaScale = event.deltaMode === 1
+    ? 16
+    : event.deltaMode === 2
+      ? window.innerHeight
+      : 1
+  handleForwardIntent(event, event.deltaY * deltaScale)
 }
 
 function handleKeySignal(event) {
   const target = event.target
   if (
     target instanceof HTMLElement
-    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))
+    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
   ) return
 
   const isForwardSpace = event.key === ' ' && !event.shiftKey
   const isForwardKey = isForwardSpace || ['ArrowDown', 'PageDown', 'End'].includes(event.key)
   if (!isForwardKey) return
+  if (isForwardSpace && target instanceof HTMLButtonElement) return
 
+  const forwardDistance = event.key === 'ArrowDown'
+    ? 48
+    : event.key === 'End'
+      ? Number.POSITIVE_INFINITY
+      : window.innerHeight * 0.9
+  handleForwardIntent(event, forwardDistance)
+}
+
+function handleTouchStart(event) {
+  lastTouchY = event.touches.length === 1
+    ? event.touches[0].clientY
+    : null
+}
+
+function handleTouchMove(event) {
   if (expansionGateActive.value || branchRetreatActive.value) {
-    event.preventDefault()
+    preventForwardInput(event)
+    return
   }
+
+  if (event.touches.length !== 1) {
+    lastTouchY = null
+    return
+  }
+
+  const currentTouchY = event.touches[0].clientY
+  if (lastTouchY === null) {
+    lastTouchY = currentTouchY
+    return
+  }
+
+  const forwardDistance = lastTouchY - currentTouchY
+  lastTouchY = currentTouchY
+  if (forwardDistance > 0) handleForwardIntent(event, forwardDistance)
+}
+
+function handleTouchEnd(event) {
+  lastTouchY = event.touches.length === 1
+    ? event.touches[0].clientY
+    : null
 }
 
 onMounted(() => {
