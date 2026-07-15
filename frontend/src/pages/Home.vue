@@ -1,6 +1,7 @@
 <template>
   <div class="home-page">
     <Main />
+    <DailOverview />
     <Second />
     <NemoOneShowcase />
     <CompanyOrbitTransition />
@@ -11,6 +12,7 @@
 
 <script setup>
 import Main from '@/page_components/Main.vue'
+import DailOverview from '@/page_components/DailOverview.vue'
 import Second from '@/page_components/Second.vue'
 import NemoOneShowcase from '@/page_components/NemoOneShowcase.vue'
 import CompanyOrbitTransition from '@/page_components/CompanyOrbitTransition.vue'

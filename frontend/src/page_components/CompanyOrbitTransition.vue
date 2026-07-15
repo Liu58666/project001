@@ -58,7 +58,15 @@ const sectionRef = ref(null)
 const stageRef = ref(null)
 const photoRefs = []
 
+const SCRUB_RESPONSE_MS = 105
+const PROGRESS_EPSILON = 0.00035
+
 let animationFrame = 0
+let targetFrame = 0
+let lastFrameTime = 0
+let renderedProgress = 0
+let targetProgress = 0
+let sceneInitialized = false
 
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value))
 
@@ -66,7 +74,8 @@ const range = (value, start, end) => clamp((value - start) / (end - start))
 
 const smooth = (value) => {
   const normalized = clamp(value)
-  return normalized * normalized * (3 - 2 * normalized)
+  return normalized * normalized * normalized
+    * (normalized * (normalized * 6 - 15) + 10)
 }
 
 const setPhotoRef = (element, index) => {
@@ -105,9 +114,7 @@ const updatePhotoPositions = (rotationProgress) => {
   })
 }
 
-const updateScene = () => {
-  animationFrame = 0
-
+const renderScene = (progress) => {
   const section = sectionRef.value
   const stage = stageRef.value
   if (!section || !stage) return
@@ -116,10 +123,6 @@ const updateScene = () => {
     document.body.classList.remove('company-orbit-dark')
     return
   }
-
-  const bounds = section.getBoundingClientRect()
-  const scrollDistance = Math.max(1, section.offsetHeight - window.innerHeight)
-  const progress = clamp(-bounds.top / scrollDistance)
 
   const photosReveal = smooth(range(progress, 0.17, 0.265))
   const rotationProgress = smooth(range(progress, 0.2, 0.58))
@@ -140,6 +143,7 @@ const updateScene = () => {
 
   updatePhotoPositions(rotationProgress)
 
+  const bounds = section.getBoundingClientRect()
   const sectionIsVisible = bounds.top < window.innerHeight && bounds.bottom > 0
   document.body.classList.toggle(
     'company-orbit-dark',
@@ -147,14 +151,70 @@ const updateScene = () => {
   )
 }
 
+const animateScene = (timestamp) => {
+  animationFrame = 0
+
+  const deltaTime = lastFrameTime
+    ? Math.min(48, timestamp - lastFrameTime)
+    : 16
+  lastFrameTime = timestamp
+
+  const blend = 1 - Math.exp(-deltaTime / SCRUB_RESPONSE_MS)
+  renderedProgress += (targetProgress - renderedProgress) * blend
+
+  if (Math.abs(targetProgress - renderedProgress) <= PROGRESS_EPSILON) {
+    renderedProgress = targetProgress
+  }
+
+  renderScene(renderedProgress)
+
+  if (renderedProgress !== targetProgress) {
+    animationFrame = window.requestAnimationFrame(animateScene)
+  } else {
+    lastFrameTime = 0
+  }
+}
+
+const updateSceneTarget = (immediate = false) => {
+  targetFrame = 0
+
+  const section = sectionRef.value
+  if (!section) return
+
+  if (window.innerWidth <= 900) {
+    if (animationFrame) window.cancelAnimationFrame(animationFrame)
+    animationFrame = 0
+    lastFrameTime = 0
+    sceneInitialized = false
+    document.body.classList.remove('company-orbit-dark')
+    return
+  }
+
+  const bounds = section.getBoundingClientRect()
+  const scrollDistance = Math.max(1, section.offsetHeight - window.innerHeight)
+  targetProgress = clamp(-bounds.top / scrollDistance)
+
+  if (!sceneInitialized || immediate) {
+    sceneInitialized = true
+    renderedProgress = targetProgress
+    renderScene(renderedProgress)
+    return
+  }
+
+  if (!animationFrame) {
+    lastFrameTime = 0
+    animationFrame = window.requestAnimationFrame(animateScene)
+  }
+}
+
 const requestSceneUpdate = () => {
-  if (animationFrame) return
-  animationFrame = window.requestAnimationFrame(updateScene)
+  if (targetFrame) return
+  targetFrame = window.requestAnimationFrame(() => updateSceneTarget())
 }
 
 onMounted(async () => {
   await nextTick()
-  updateScene()
+  updateSceneTarget(true)
   window.addEventListener('scroll', requestSceneUpdate, { passive: true })
   window.addEventListener('resize', requestSceneUpdate, { passive: true })
 })
@@ -163,6 +223,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', requestSceneUpdate)
   window.removeEventListener('resize', requestSceneUpdate)
   if (animationFrame) window.cancelAnimationFrame(animationFrame)
+  if (targetFrame) window.cancelAnimationFrame(targetFrame)
   document.body.classList.remove('company-orbit-dark')
 })
 </script>

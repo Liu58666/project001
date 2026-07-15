@@ -73,6 +73,18 @@ const MESSAGES = {
       feature2: 'Legal Copilot · Contracts & Compliance',
       feature3: 'Medical Copilot · AI-MDT & Triage',
     },
+    dailOverview: {
+      titleLine1: 'Not a one-off AI project.',
+      titleLine2: 'Intelligence built to keep growing.',
+      intro:
+        'DAIL connects trusted data, engineered models, and dependable agents into one reliable, governed, continuously evolving system.',
+      verbAria: 'DAIL builds, governs, and deploys industry intelligence',
+      verb1: 'Build',
+      verb2: 'Govern',
+      verb3: 'Deploy',
+      statement:
+        'Industry knowledge becomes capability. Intelligence becomes part of everyday action.',
+    },
     news: {
       title: 'News',
       subtitle: 'Updates, partnerships, and milestones from DAIL Tech.',
@@ -445,6 +457,16 @@ const MESSAGES = {
       feature1: '智慧政务助手 · 政策与服务',
       feature2: '法务助手 · 合同与合规',
       feature3: '医疗助手 · AI-MDT 与分诊',
+    },
+    dailOverview: {
+      titleLine1: '不是一次性的 AI 项目。',
+      titleLine2: '是持续生长的行业智能。',
+      intro: 'DAIL 将可信数据、工程化模型与智能体，连接成一套可靠、可治理、可持续迭代的系统。',
+      verbAria: 'DAIL 构建、治理并落地行业智能',
+      verb1: '构建',
+      verb2: '治理',
+      verb3: '落地',
+      statement: '行业知识成为能力，智能真正进入组织的日常行动。',
     },
     news: {
       title: '新闻',

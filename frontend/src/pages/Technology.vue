@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="pageRef"
     :class="['technology-page', { 'technology-page--embedded': embedded }]"
   >
     <section
@@ -9,8 +10,11 @@
         'network--center-visible': centerVisible,
         'network--expanded': expansionStarted,
         'network--branches-visible': branchesVisible,
+        'network--branches-interactive': branchesInteractive,
+        'network--branches-retreated': branchesRetreated,
       }"
       aria-labelledby="network-title"
+      @transitionend="handleNetworkTransitionEnd"
     >
       <svg class="network-lines" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
         <path pathLength="1" d="M735 425 L395 275" />
@@ -19,26 +23,27 @@
         <path pathLength="1" d="M865 475 L1200 690" />
       </svg>
 
-      <button
-        v-for="(topic, index) in topics"
-        :key="topic.id"
-        class="topic"
-        :class="`topic--${index + 1}`"
-        type="button"
-        @click="selectTopic(topic)"
-      >
-        <span class="topic-number">{{ topic.index }}</span>
-        <span class="topic-name">{{ topic.title }}</span>
-        <span class="topic-arrow" aria-hidden="true">↗</span>
-      </button>
+      <div class="network-topics" :aria-hidden="!branchesInteractive">
+        <button
+          v-for="(topic, index) in topics"
+          :key="topic.id"
+          class="topic"
+          :class="`topic--${index + 1}`"
+          type="button"
+          :tabindex="branchesInteractive ? 0 : -1"
+          @click="selectTopic(topic)"
+        >
+          <span class="topic-number">{{ topic.index }}</span>
+          <span class="topic-name">{{ topic.title }}</span>
+          <span class="topic-arrow" aria-hidden="true">↗</span>
+        </button>
+      </div>
 
       <div class="network-copy">
         <h1 id="network-title">{{ t('technologyPage.mapTitle') }}</h1>
-        <p>{{ t('technologyPage.mapInstruction') }}</p>
-        <button class="network-action" type="button" @click="selectTopic(topics[0])">
-          {{ t('technologyPage.explore') }}
-          <span aria-hidden="true">→</span>
-        </button>
+        <div class="network-support">
+          <p>{{ t('technologyPage.mapInstruction') }}</p>
+        </div>
       </div>
 
     </section>
@@ -61,13 +66,24 @@ const embedded = props.embedded
 
 const i18n = useI18nStore()
 const router = useRouter()
+const pageRef = ref(null)
 const networkRef = ref(null)
 // 初始状态就保留中央黑框及其文案，扩散动画只负责打开周边区域。
 const centerVisible = ref(true)
 const expansionStarted = ref(false)
+const expansionComplete = ref(false)
+const expansionGateActive = ref(false)
 const branchesVisible = ref(false)
+const branchesRetreated = ref(false)
+const branchRetreatActive = ref(false)
 const t = (key, vars) => i18n.t(key, vars)
 const topicIds = ['data-governance', 'model-engineering', 'agent-development', 'platform-build']
+const EXPANSION_DELAY_MS = 120
+const EXPANSION_FALLBACK_MS = 1380
+const BRANCH_RETREAT_MS = 760
+const EXPANSION_TRIGGER_VIEWPORT_RATIO = 0.58
+const RETREAT_TRIGGER_VIEWPORT_RATIO = 0.3
+const PINNED_BREAKPOINT = 901
 
 const topics = computed(() => topicIds.map((id, index) => ({
   id,
@@ -77,59 +93,218 @@ const topics = computed(() => topicIds.map((id, index) => ({
   points: [1, 2, 3, 4].map((point) => t(`technologyPage.topics.${id}.point${point}`)),
 })))
 
+const branchesInteractive = computed(() => (
+  branchesVisible.value && !branchesRetreated.value
+))
+
 let entryFrame = null
 let expansionTimer = null
-let branchesTimer = null
+let completionTimer = null
+let branchRetreatTimer = null
 let hasAnimated = false
+let inputListenersAttached = false
+let interactionZoneActive = false
+let lastScrollY = 0
 
-const clearNetworkTimers = () => {
+const prefersReducedMotion = () => (
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+)
+
+const usesPinnedExperience = () => (
+  embedded
+  && window.matchMedia(`(min-width: ${PINNED_BREAKPOINT}px)`).matches
+  && !prefersReducedMotion()
+)
+
+function clearNetworkTimers() {
   if (expansionTimer !== null) {
     window.clearTimeout(expansionTimer)
     expansionTimer = null
   }
-  if (branchesTimer !== null) {
-    window.clearTimeout(branchesTimer)
-    branchesTimer = null
+  if (completionTimer !== null) {
+    window.clearTimeout(completionTimer)
+    completionTimer = null
+  }
+  if (branchRetreatTimer !== null) {
+    window.clearTimeout(branchRetreatTimer)
+    branchRetreatTimer = null
   }
 }
 
-const resetNetworkAnimation = () => {
+function setInputCapture(active) {
+  if (active && !inputListenersAttached) {
+    window.addEventListener('wheel', handleWheelSignal, { passive: false })
+    window.addEventListener('keydown', handleKeySignal)
+    inputListenersAttached = true
+  } else if (!active && inputListenersAttached) {
+    window.removeEventListener('wheel', handleWheelSignal)
+    window.removeEventListener('keydown', handleKeySignal)
+    inputListenersAttached = false
+  }
+}
+
+function syncInputCapture() {
+  const shouldCapture = usesPinnedExperience() && (
+    expansionGateActive.value
+    || branchRetreatActive.value
+  )
+  setInputCapture(shouldCapture)
+}
+
+function setExpansionGate(active) {
+  expansionGateActive.value = active
+  syncInputCapture()
+}
+
+function finishNetworkExpansion() {
+  if (expansionComplete.value) return
+  if (completionTimer !== null) {
+    window.clearTimeout(completionTimer)
+    completionTimer = null
+  }
+  expansionComplete.value = true
+  branchesVisible.value = true
+  setExpansionGate(false)
+}
+
+function finishBranchRetreat() {
+  branchRetreatTimer = null
+  branchRetreatActive.value = false
+  syncInputCapture()
+}
+
+function startBranchRetreat() {
+  if (
+    !usesPinnedExperience()
+    || !interactionZoneActive
+    || !expansionComplete.value
+    || branchesRetreated.value
+    || branchRetreatActive.value
+  ) return
+
+  branchesRetreated.value = true
+  branchRetreatActive.value = true
+  syncInputCapture()
+  branchRetreatTimer = window.setTimeout(finishBranchRetreat, BRANCH_RETREAT_MS)
+}
+
+function revealBranches() {
+  if (branchRetreatTimer !== null) {
+    window.clearTimeout(branchRetreatTimer)
+    branchRetreatTimer = null
+  }
+  branchRetreatActive.value = false
+  branchesRetreated.value = false
+  syncInputCapture()
+}
+
+function resetNetworkAnimation() {
   clearNetworkTimers()
   hasAnimated = false
+  interactionZoneActive = false
   // 回到页面顶部时只收回扩散层，保留首次打开时的中央黑色内容框。
   centerVisible.value = true
   expansionStarted.value = false
+  expansionComplete.value = false
   branchesVisible.value = false
+  branchesRetreated.value = false
+  branchRetreatActive.value = false
+  setExpansionGate(false)
 }
 
-const startNetworkAnimation = () => {
+function startNetworkAnimation() {
   if (hasAnimated) return
   hasAnimated = true
   centerVisible.value = true
+  expansionComplete.value = false
+  branchesRetreated.value = false
+  branchRetreatActive.value = false
+  // 扩散提前开始；只有真正进入整屏停驻位置且动画尚未完成时才锁住下滑。
+  setExpansionGate(false)
 
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (reduceMotion) {
+  if (prefersReducedMotion()) {
     expansionStarted.value = true
+    expansionComplete.value = true
     branchesVisible.value = true
+    setExpansionGate(false)
     return
   }
 
   expansionTimer = window.setTimeout(() => {
+    expansionTimer = null
     expansionStarted.value = true
-  }, 120)
-
-  branchesTimer = window.setTimeout(() => {
-    branchesVisible.value = true
-  }, 1500)
+    // transitionend 是正常完成路径；这个计时器只在浏览器未派发事件时兜底解锁。
+    completionTimer = window.setTimeout(finishNetworkExpansion, EXPANSION_FALLBACK_MS)
+  }, EXPANSION_DELAY_MS)
 }
 
-const checkNetworkEntry = () => {
-  if (!networkRef.value) return
+function handleNetworkTransitionEnd(event) {
+  if (event.target !== networkRef.value) return
+  if (!String(event.propertyName).includes('clip-path')) return
+  if (!expansionStarted.value || expansionComplete.value) return
+  finishNetworkExpansion()
+}
 
-  if (embedded && window.scrollY <= 8) {
+function updateInteractionZone(rect, viewportHeight) {
+  interactionZoneActive = usesPinnedExperience()
+    && rect.top <= 1
+    && rect.bottom >= viewportHeight - 1
+
+  const shouldGateExpansion = interactionZoneActive
+    && hasAnimated
+    && !expansionComplete.value
+  if (expansionGateActive.value !== shouldGateExpansion) {
+    setExpansionGate(shouldGateExpansion)
+  } else {
+    syncInputCapture()
+  }
+}
+
+function checkNetworkEntry() {
+  if (!pageRef.value || !networkRef.value) return
+
+  const currentScrollY = window.scrollY
+  const scrollDelta = currentScrollY - lastScrollY
+  lastScrollY = currentScrollY
+
+  if (embedded && currentScrollY <= 8) {
     if (hasAnimated) resetNetworkAnimation()
+    else {
+      interactionZoneActive = false
+      syncInputCapture()
+    }
     return
   }
+
+  const pinnedExperience = usesPinnedExperience()
+  if (!pinnedExperience) {
+    interactionZoneActive = false
+    if (branchesRetreated.value || branchRetreatActive.value) revealBranches()
+    if (expansionGateActive.value) finishNetworkExpansion()
+  }
+
+  const rect = pageRef.value.getBoundingClientRect()
+  const viewportHeight = window.innerHeight || 1
+  const pinnedDistance = Math.max(0, -rect.top)
+  const retreatTriggerDistance = viewportHeight * RETREAT_TRIGGER_VIEWPORT_RATIO
+  updateInteractionZone(rect, viewportHeight)
+
+  if (
+    branchesRetreated.value
+    && scrollDelta < -1
+    && rect.top < viewportHeight * 0.4
+    && rect.bottom > viewportHeight * 0.6
+  ) revealBranches()
+
+  // 先在停驻区内向下移动约三成屏高，再用方向信号启动一次定时退场。
+  if (
+    scrollDelta > 1
+    && interactionZoneActive
+    && pinnedDistance >= retreatTriggerDistance
+    && expansionComplete.value
+    && !branchesRetreated.value
+    && !branchRetreatActive.value
+  ) startBranchRetreat()
 
   if (hasAnimated) return
   if (!embedded) {
@@ -137,13 +312,13 @@ const checkNetworkEntry = () => {
     return
   }
 
-  const rect = networkRef.value.getBoundingClientRect()
-  const viewportHeight = window.innerHeight || 1
-  const expansionTriggerLine = viewportHeight * 0.5
+  const expansionTriggerLine = pinnedExperience
+    ? viewportHeight * EXPANSION_TRIGGER_VIEWPORT_RATIO
+    : viewportHeight * 0.5
   if (rect.top <= expansionTriggerLine && rect.bottom > 0) startNetworkAnimation()
 }
 
-const requestEntryCheck = () => {
+function requestEntryCheck() {
   if (entryFrame !== null) return
   entryFrame = window.requestAnimationFrame(() => {
     entryFrame = null
@@ -151,11 +326,36 @@ const requestEntryCheck = () => {
   })
 }
 
-const selectTopic = (topic) => {
+function selectTopic(topic) {
   router.push({ name: 'technology-topic', params: { topicId: topic.id } })
 }
 
+function handleWheelSignal(event) {
+  if (event.deltaY <= 0) return
+
+  if (expansionGateActive.value || branchRetreatActive.value) {
+    event.preventDefault()
+  }
+}
+
+function handleKeySignal(event) {
+  const target = event.target
+  if (
+    target instanceof HTMLElement
+    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))
+  ) return
+
+  const isForwardSpace = event.key === ' ' && !event.shiftKey
+  const isForwardKey = isForwardSpace || ['ArrowDown', 'PageDown', 'End'].includes(event.key)
+  if (!isForwardKey) return
+
+  if (expansionGateActive.value || branchRetreatActive.value) {
+    event.preventDefault()
+  }
+}
+
 onMounted(() => {
+  lastScrollY = window.scrollY
   window.addEventListener('scroll', requestEntryCheck, { passive: true })
   window.addEventListener('resize', requestEntryCheck, { passive: true })
   requestEntryCheck()
@@ -166,6 +366,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', requestEntryCheck)
   if (entryFrame !== null) window.cancelAnimationFrame(entryFrame)
   clearNetworkTimers()
+  expansionGateActive.value = false
+  branchRetreatActive.value = false
+  interactionZoneActive = false
+  setInputCapture(false)
 })
 </script>
 
@@ -233,7 +437,9 @@ onBeforeUnmount(() => {
   inset: 0;
   width: 100%;
   height: 100%;
+  opacity: 1;
   pointer-events: none;
+  transition: opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .network-lines path {
@@ -281,7 +487,15 @@ h1 {
   letter-spacing: -0.055em;
 }
 
-.network-copy > p {
+.network-support {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.network-support > p {
   max-width: 650px;
   margin: 28px auto 0;
   color: rgba(250, 249, 245, 0.72);
@@ -289,24 +503,27 @@ h1 {
   line-height: 1.6;
 }
 
-.network-action {
-  display: inline-flex;
-  margin-top: 30px;
-  padding: 11px 16px;
-  align-items: center;
-  gap: 28px;
-  border: 1px solid #faf9f5;
-  border-radius: 8px;
-  background: #faf9f5;
-  color: #141413;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+.network-topics {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: none;
+  transition:
+    opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.network-action:hover {
-  background: transparent;
-  color: #faf9f5;
+.network--branches-retreated .network-lines,
+.network--branches-retreated .network-support,
+.network--branches-retreated .network-topics {
+  opacity: 0;
+}
+
+.network--branches-retreated .network-support,
+.network--branches-retreated .network-topics {
+  transform: translateY(-22px);
 }
 
 .topic {
@@ -332,6 +549,9 @@ h1 {
 .network--branches-visible .topic {
   opacity: 1;
   transform: translateY(0);
+}
+
+.network--branches-interactive .topic {
   pointer-events: auto;
 }
 
@@ -367,6 +587,19 @@ h1 {
 
 .topic-arrow {
   font-size: 14px;
+}
+
+@media (min-width: 901px) {
+  .technology-page--embedded {
+    display: block;
+    min-height: 155svh;
+  }
+
+  .technology-page--embedded .network {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+  }
 }
 
 @media (max-width: 900px) {
@@ -409,21 +642,23 @@ h1 {
     transform: translateY(18px);
   }
 
+  .network-topics {
+    position: static;
+    width: 100%;
+    transform: none;
+  }
+
   .network--center-visible .network-copy {
     transform: translateY(0);
   }
 
-  .network-copy > p {
+  .network-support > p {
     margin-left: 0;
   }
 
   h1 {
     max-width: 10ch;
     font-size: clamp(46px, 13vw, 72px);
-  }
-
-  .network-action {
-    margin-top: 22px;
   }
 
   .topic,
@@ -449,8 +684,10 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .network-action,
-  .topic {
+  .topic,
+  .network-lines,
+  .network-topics,
+  .network-support {
     transition: none;
   }
 
@@ -462,11 +699,18 @@ h1 {
   }
 
   .technology-page--embedded .network {
+    position: relative;
+    top: auto;
     width: 100%;
     min-height: 100svh;
+    height: auto;
     border-radius: 0;
     clip-path: inset(0 round 0);
     transition: none;
+  }
+
+  .technology-page--embedded {
+    min-height: 100svh;
   }
 
   .network-lines path {
