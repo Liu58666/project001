@@ -4,7 +4,7 @@
     <Second />
     <NemoOneShowcase />
     <CompanyOrbitTransition />
-    <Third />
+    <Third home-handoff />
     <End />
   </div>
 </template>
@@ -28,4 +28,3 @@ import End from '@/page_components/End.vue'
   overflow: clip;
 }
 </style>
-

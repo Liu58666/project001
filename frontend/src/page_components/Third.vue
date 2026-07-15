@@ -1,6 +1,9 @@
 <!-- src/pages/Third.vue -->
 <template>
-  <section class="cta-section">
+  <section
+    class="cta-section"
+    :class="{ 'cta-section--home-handoff': homeHandoff }"
+  >
     <!-- 中部视频背景（只负责展示） -->
     <div class="cta-band">
       <video
@@ -55,6 +58,13 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import videoSrc from '@/assets/images/section4.webm'
+
+defineProps({
+  homeHandoff: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 const router = useRouter()
 const ctaRef = ref(null)
@@ -571,6 +581,26 @@ onBeforeUnmount(() => {
 
 .btn-talk:active {
   box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+@media (min-width: 901px) {
+  .cta-section--home-handoff .cta-band {
+    top: 40%;
+    height: 500px;
+  }
+
+  .cta-section--home-handoff .cta-band::after {
+    background: linear-gradient(
+      to bottom,
+      #ffffff 0%,
+      #ffffff 18%,
+      rgba(255, 255, 255, 0.96) 27%,
+      rgba(255, 255, 255, 0.82) 35%,
+      rgba(255, 255, 255, 0.5) 43%,
+      rgba(255, 255, 255, 0.18) 50%,
+      rgba(255, 255, 255, 0) 55%
+    );
+  }
 }
 
 @media (max-width: 900px) {
