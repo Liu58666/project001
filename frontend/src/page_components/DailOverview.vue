@@ -343,14 +343,14 @@ onBeforeUnmount(() => {
 @media (max-width: 900px) {
   .dail-overview {
     min-height: auto;
-    padding: 104px 20px 76px;
+    padding: 96px 20px 64px;
   }
 
   .overview-grid {
     min-height: 0;
     grid-template-columns: 1fr;
     grid-template-rows: auto;
-    row-gap: 58px;
+    row-gap: 0;
   }
 
   .overview-lead,
@@ -361,47 +361,101 @@ onBeforeUnmount(() => {
   }
 
   .overview-title {
-    max-width: 10ch;
-    font-size: clamp(46px, 13vw, 74px);
-    line-height: 0.98;
-    letter-spacing: -0.065em;
+    max-width: 100%;
+    font-size: clamp(40px, 11.8vw, 54px);
+    line-height: 0.96;
+    letter-spacing: -0.07em;
   }
 
   .overview-intro {
-    max-width: 31rem;
-    justify-self: end;
+    width: 100%;
+    max-width: 34rem;
+    margin-top: 28px;
+    justify-self: start;
+    padding-bottom: 0;
   }
 
   .overview-intro p {
-    font-size: 18px;
+    max-width: 34ch;
+    font-size: clamp(15px, 4.15vw, 17px);
+    line-height: 1.62;
   }
 
   .overview-verbs {
     width: 100%;
+    margin-top: 34px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .overview-verb {
-    min-height: 70px;
+    min-height: 44px;
+    padding: 0;
     grid-template-columns: 1fr;
+    align-items: center;
   }
 
   .overview-verb__word {
-    font-size: clamp(38px, 12vw, 58px);
+    font-size: clamp(29px, 8.4vw, 38px);
+    line-height: 1;
+    letter-spacing: -0.06em;
   }
 
   .overview-close {
-    padding: 34px 0 0;
+    margin-top: 42px;
+    padding: 0;
   }
 
   .overview-close p {
-    max-width: 17ch;
-    font-size: clamp(30px, 8.5vw, 46px);
+    max-width: 20ch;
+    font-size: clamp(26px, 7.2vw, 34px);
+    line-height: 1.14;
+    letter-spacing: -0.05em;
+  }
+
+  /* 手机端减少模糊和残影运算，并缩短错峰等待。 */
+  .overview-title__echo {
+    display: none;
+  }
+
+  .overview-title__text {
+    filter: none;
+    transform: translateY(46%);
+    transition: opacity 0.3s ease 0.08s,
+      transform 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.08s;
+  }
+
+  .overview-title__line--first .overview-title__text {
+    transition-delay: 0.08s;
+  }
+
+  .overview-title__line--second .overview-title__text {
+    transition-delay: 0.16s;
+  }
+
+  .overview-intro {
+    transition: opacity 0.35s ease 0.22s,
+      clip-path 0.58s cubic-bezier(0.22, 1, 0.36, 1) 0.2s,
+      transform 0.58s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+  }
+
+  .overview-verb__word {
+    filter: none;
+    transform: translateX(-24px);
+    transition: opacity 0.32s ease calc(0.34s + var(--verb-index) * 0.08s),
+      transform 0.58s cubic-bezier(0.16, 1, 0.3, 1)
+        calc(0.34s + var(--verb-index) * 0.08s);
+  }
+
+  .overview-close {
+    transition: opacity 0.38s ease 0.54s,
+      transform 0.62s cubic-bezier(0.22, 1, 0.36, 1) 0.5s;
   }
 }
 
 @media (max-width: 520px) {
   .overview-title {
-    font-size: clamp(42px, 12.8vw, 60px);
+    font-size: clamp(38px, 11.6vw, 48px);
   }
 }
 

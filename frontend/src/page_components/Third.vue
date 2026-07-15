@@ -605,7 +605,13 @@ onBeforeUnmount(() => {
 
 @media (max-width: 900px) {
   .cta-section {
-    padding-top: 48px;
+    padding-top: 20px;
+  }
+
+  .cta-section--home-handoff {
+    z-index: 4;
+    margin-top: -2px;
+    box-shadow: 0 -2px 0 #ffffff;
   }
 
   .cta-band {
@@ -613,12 +619,12 @@ onBeforeUnmount(() => {
   }
 
   .cta-container {
-    min-height: 460px;
-    padding: 48px 20px;
+    min-height: 420px;
+    padding: 32px 20px 36px;
   }
 
   .cta-content {
-    gap: 18px;
+    gap: 16px;
     margin-bottom: 0;
   }
 
@@ -646,6 +652,24 @@ onBeforeUnmount(() => {
     width: 100%;
     min-height: 50px;
     justify-content: center;
+  }
+
+  /* 手机屏幕停留时间更短，避免先看到长时间的空白色带。 */
+  .cta-preheadline.fade-in-slide.animate {
+    animation-delay: 0s;
+    animation-duration: 0.45s;
+  }
+
+  .cta-headline.fade-in-slide.animate {
+    animation-delay: 0.08s;
+    animation-duration: 0.68s;
+    animation-name: fadeInSlideRightKeyframes;
+  }
+
+  .cta-buttons.fade-in-slide.animate {
+    animation-delay: 0.24s;
+    animation-duration: 0.68s;
+    animation-name: fadeInSlideKeyframes;
   }
 }
 

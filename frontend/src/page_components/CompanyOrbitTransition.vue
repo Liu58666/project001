@@ -119,11 +119,6 @@ const renderScene = (progress) => {
   const stage = stageRef.value
   if (!section || !stage) return
 
-  if (window.innerWidth <= 900) {
-    document.body.classList.remove('company-orbit-dark')
-    return
-  }
-
   const photosReveal = smooth(range(progress, 0.17, 0.265))
   const rotationProgress = smooth(range(progress, 0.2, 0.58))
   const exitProgress = smooth(range(progress, 0.57, 0.7))
@@ -181,17 +176,25 @@ const updateSceneTarget = (immediate = false) => {
   const section = sectionRef.value
   if (!section) return
 
-  if (window.innerWidth <= 900) {
+  // 手机端使用独立的紧凑渐变场景，不运行桌面的 sticky 滚动擦除。
+  if (window.matchMedia('(max-width: 900px)').matches) {
     if (animationFrame) window.cancelAnimationFrame(animationFrame)
     animationFrame = 0
     lastFrameTime = 0
     sceneInitialized = false
-    document.body.classList.remove('company-orbit-dark')
+
+    const bounds = section.getBoundingClientRect()
+    const navSwitchLine = Math.max(68, window.innerHeight * 0.38)
+    document.body.classList.toggle(
+      'company-orbit-dark',
+      bounds.top <= 68 && bounds.bottom > navSwitchLine,
+    )
     return
   }
 
   const bounds = section.getBoundingClientRect()
-  const scrollDistance = Math.max(1, section.offsetHeight - window.innerHeight)
+  const stageHeight = stageRef.value?.offsetHeight || window.innerHeight
+  const scrollDistance = Math.max(1, section.offsetHeight - stageHeight)
   targetProgress = clamp(-bounds.top / scrollDistance)
 
   if (!sceneInitialized || immediate) {
@@ -525,7 +528,90 @@ onBeforeUnmount(() => {
 
 @media (max-width: 900px) {
   .company-orbit-section {
+    --mobile-company-gradient: linear-gradient(
+      180deg,
+      #000000 0%,
+      #000000 24%,
+      #040404 34%,
+      #111212 45%,
+      #292a2a 56%,
+      #4c4e4e 66%,
+      #737575 73%,
+      #989a9a 79%,
+      #bfc0c0 84%,
+      #dddddd 88%,
+      #f1f1f1 91%,
+      #ffffff 94%,
+      #ffffff 100%
+    );
+    display: block;
+    height: clamp(520px, 78svh, 680px);
+    margin-top: -1px;
+    background: var(--mobile-company-gradient);
+  }
+
+  .company-orbit-stage {
+    position: relative;
+    top: auto;
+    height: 100%;
+    background: var(--mobile-company-gradient);
+  }
+
+  .transition-summary {
+    z-index: 8;
+    justify-content: flex-start;
+    gap: clamp(28px, 4.4svh, 38px);
+    padding: clamp(108px, 15svh, 132px) 24px 34px;
+    transform: none;
+  }
+
+  .transition-title {
+    max-width: 10ch;
+    font-size: clamp(38px, 10.2vw, 50px);
+    font-weight: 440;
+    line-height: 0.98;
+    letter-spacing: -0.06em;
+    color: #ffffff;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.08),
+      0 12px 34px rgba(0, 0, 0, 0.42);
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .logo-gate {
+    width: clamp(74px, 21vw, 94px);
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .logo-gate img {
+    position: relative;
+    z-index: 1;
+    filter: invert(1) grayscale(1) brightness(2.6)
+      drop-shadow(0 8px 18px rgba(0, 0, 0, 0.28));
+  }
+
+  .background-wash,
+  .white-fill {
     display: none;
+  }
+}
+
+@media (max-width: 420px) and (max-height: 720px) {
+  .transition-summary {
+    gap: 24px;
+    padding: 96px 20px 26px;
+  }
+
+  .transition-title {
+    font-size: clamp(34px, 9.6vw, 40px);
+  }
+
+  .logo-gate {
+    width: 72px;
   }
 }
 
@@ -605,6 +691,65 @@ onBeforeUnmount(() => {
 
   body.company-orbit-dark .nav .login-icon:hover .user-avatar {
     color: #050505;
+  }
+}
+
+
+@media (max-width: 900px) {
+  body.company-orbit-dark .nav,
+  body.company-orbit-dark .nav.scrolled {
+    background: rgba(0, 0, 0, 0.9);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  body.company-orbit-dark .nav .logo {
+    filter: invert(1) grayscale(1) brightness(1.8);
+  }
+
+  body.company-orbit-dark .nav .mobile-language-toggle {
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  body.company-orbit-dark .nav .login-icon {
+    border-color: rgba(255, 255, 255, 0.88);
+  }
+
+  body.company-orbit-dark .nav .login-icon:not(.login-icon--has-photo) img {
+    filter: invert(1);
+  }
+
+  body.company-orbit-dark .nav .user-avatar {
+    color: #ffffff;
+  }
+
+  body.company-orbit-dark .nav .menu-toggle span {
+    background: #ffffff;
+  }
+
+  body.company-orbit-dark .nav:has(.menu--open),
+  body.company-orbit-dark .nav.scrolled:has(.menu--open) {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+  }
+
+  body.company-orbit-dark .nav:has(.menu--open) .logo {
+    filter: none;
+  }
+
+  body.company-orbit-dark .nav:has(.menu--open) .mobile-language-toggle {
+    color: #1f2933;
+  }
+
+  body.company-orbit-dark .nav:has(.menu--open) .login-icon {
+    border-color: #1f2933;
+  }
+
+  body.company-orbit-dark .nav:has(.menu--open) .login-icon:not(.login-icon--has-photo) img {
+    filter: none;
+  }
+
+  body.company-orbit-dark .nav:has(.menu--open) .menu-toggle span {
+    background: #1f2933;
   }
 }
 </style>

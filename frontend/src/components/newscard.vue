@@ -243,6 +243,37 @@ const displayText = computed(() => {
   }
 }
 
+@media (max-width: 900px) {
+  .news-card {
+    min-height: 42px;
+  }
+
+  .inner {
+    gap: 10px;
+    padding: 6px 11px;
+  }
+
+  .left {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .label {
+    white-space: nowrap;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  .summary {
+    font-size: 13px;
+  }
+
+  .icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .news-card:hover::before,
   .news-card:active::before,

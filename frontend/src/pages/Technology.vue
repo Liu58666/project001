@@ -233,7 +233,10 @@ function startNetworkAnimation() {
   // 扩散提前开始；只有真正进入整屏停驻位置且动画尚未完成时才锁住下滑。
   setExpansionGate(false)
 
-  if (prefersReducedMotion()) {
+  // 手机端不需要桌面的大面积扩散等待；进入区块时直接给出完整内容，
+  // 避免短屏设备先看到一整屏空黑区域。
+  const compactViewport = window.matchMedia(`(max-width: ${PINNED_BREAKPOINT - 1}px)`).matches
+  if (prefersReducedMotion() || compactViewport) {
     expansionStarted.value = true
     expansionComplete.value = true
     branchesVisible.value = true
@@ -701,19 +704,18 @@ h1 {
 
   .technology-page--embedded {
     display: block;
+    min-height: 0;
     padding-top: 0;
     padding-block: 0;
   }
 
   .technology-page--embedded .network {
     width: 100%;
-    min-height: 100svh;
+    min-height: 0;
+    height: auto;
     border-radius: 0;
-    clip-path: inset(
-      max(0px, calc((100svh - 520px) / 2))
-      7%
-      round 20px
-    );
+    clip-path: none;
+    transition: none;
   }
 
   .technology-page--embedded .network.network--expanded {
@@ -721,22 +723,37 @@ h1 {
   }
 
   .network {
-    min-height: calc(100svh - 68px);
-    padding: 56px 20px 34px;
+    display: flex;
+    min-height: 100svh;
+    padding: clamp(82px, 11svh, 112px) 18px 38px;
+    flex-direction: column;
     box-sizing: border-box;
   }
 
-  .network-lines,
+  .network-lines {
+    display: none;
+  }
+
   .network-copy {
-    position: static;
-    width: 100%;
-    text-align: left;
-    transform: translateY(18px);
+    position: relative;
+    top: auto;
+    left: auto;
+    width: min(100%, 440px);
+    margin: 0 auto;
+    order: 1;
+    text-align: center;
+    transform: translateY(14px);
   }
 
   .network-topics {
-    position: static;
-    width: 100%;
+    position: relative;
+    inset: auto;
+    display: grid;
+    width: min(100%, 440px);
+    margin: clamp(72px, 10svh, 92px) auto 0;
+    order: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
     transform: none;
   }
 
@@ -745,12 +762,17 @@ h1 {
   }
 
   .network-support > p {
-    margin-left: 0;
+    max-width: 31ch;
+    margin: 16px auto 0;
+    font-size: clamp(12px, 3.4vw, 15px);
+    line-height: 1.5;
   }
 
   h1 {
-    max-width: 10ch;
-    font-size: clamp(46px, 13vw, 72px);
+    max-width: 11ch;
+    margin: 0 auto;
+    font-size: clamp(36px, 10.4vw, 52px);
+    line-height: 0.98;
   }
 
   .topic,
@@ -760,19 +782,127 @@ h1 {
   .topic--4 {
     position: relative;
     inset: auto;
-    width: 100%;
-    margin-top: 22px;
-    transform: translateY(14px);
+    width: auto;
+    min-width: 0;
+    min-height: 82px;
+    margin: 0;
+    padding: 12px;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    gap: 8px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.035);
+    transform: translateY(10px);
+    transition: color 0.2s ease, opacity 0.3s ease, transform 0.3s ease;
   }
 
-  .topic--1 {
-    margin-top: 52px;
+  .network-topics::before,
+  .network-topics::after,
+  .topic::before {
+    content: '';
+    position: absolute;
+    background: rgba(250, 249, 245, 0.26);
+    pointer-events: none;
+  }
+
+  .network-topics::before {
+    left: 50%;
+    top: -58px;
+    width: 1px;
+    height: 38px;
+  }
+
+  .network-topics::after {
+    top: -20px;
+    left: 25%;
+    right: 25%;
+    height: 1px;
+  }
+
+  .topic::before {
+    left: 50%;
+    top: -20px;
+    width: 1px;
+    height: 20px;
+  }
+
+  .topic--3::before,
+  .topic--4::before {
+    top: -15px;
+    height: 15px;
   }
 
   .topic-name {
-    font-size: 30px;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: end;
+    font-size: clamp(17px, 5vw, 22px);
+    line-height: 1.05;
   }
 
+  .topic-number {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 9px;
+  }
+
+  .topic-arrow {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 12px;
+  }
+
+  .network--branches-visible .topic--2 {
+    transition-delay: 0.03s;
+  }
+
+  .network--branches-visible .topic--3 {
+    transition-delay: 0.06s;
+  }
+
+  .network--branches-visible .topic--4 {
+    transition-delay: 0.09s;
+  }
+
+}
+
+@media (max-width: 420px) and (max-height: 720px) {
+  .network {
+    padding: 74px 16px 26px;
+  }
+
+  .network-copy {
+    width: 100%;
+  }
+
+  h1 {
+    font-size: clamp(30px, 9.2vw, 38px);
+  }
+
+  .network-support > p {
+    margin-top: 12px;
+    font-size: 11px;
+  }
+
+  .network-topics {
+    margin-top: 58px;
+    gap: 12px;
+  }
+
+  .topic,
+  .topic--1,
+  .topic--2,
+  .topic--3,
+  .topic--4 {
+    min-height: 68px;
+    padding: 10px;
+  }
+
+  .topic-name {
+    font-size: clamp(15px, 4.8vw, 18px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -808,6 +938,14 @@ h1 {
   .network-lines path {
     stroke-dashoffset: 0;
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 900px) {
+  .technology-page--embedded,
+  .technology-page--embedded .network {
+    min-height: 0;
+    height: auto;
   }
 }
 </style>

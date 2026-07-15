@@ -489,8 +489,9 @@
     }
 
     .subscribe-title {
-      font-size: 24px;
+      font-size: clamp(20px, 5.7vw, 24px);
       line-height: 1.3;
+      letter-spacing: -0.035em;
       transform: none;
     }
 

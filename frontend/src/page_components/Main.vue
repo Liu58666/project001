@@ -709,15 +709,24 @@ let timer = null
   .hero-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 14px;
+    align-self: center;
+    width: min(100%, 320px);
+    gap: 8px;
+    margin-top: 10px;
   }
 
   .btn-primary,
   .btn-ghost {
-    min-height: 48px;
-    padding: 12px 16px;
+    min-height: 42px;
+    padding: 8px 10px;
     justify-content: center;
+    font-size: 14px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .icon-arrow {
+    font-size: 11px;
   }
 
   .hero-right {
@@ -782,7 +791,7 @@ let timer = null
 
 @media (max-width: 420px) {
   .hero-actions {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
   
