@@ -74,16 +74,21 @@ const MESSAGES = {
       feature3: 'Medical Copilot · AI-MDT & Triage',
     },
     dailOverview: {
-      titleLine1: 'Not a one-off AI project.',
-      titleLine2: 'Intelligence built to keep growing.',
+      titleLine1: 'Not projects that end at delivery',
+      titleLine2: 'Self-built intelligence that keeps evolving',
       intro:
-        'DAIL connects trusted data, engineered models, and dependable agents into one reliable, governed, continuously evolving system.',
-      verbAria: 'DAIL builds, governs, and deploys industry intelligence',
-      verb1: 'Build',
-      verb2: 'Govern',
-      verb3: 'Deploy',
+        'Self-built across all four layers—data, models, agents, and platform—DAIL turns trusted data and lean models into a governed, iterable system that grows with the business',
+      pointsAria: 'DAIL full stack: data, models, agents, platform',
+      point1Key: 'Data',
+      point1Desc: 'A governed, compliant, and traceable data foundation',
+      point2Key: 'Models',
+      point2Desc: 'Lean models—low cost, high performance, end to end',
+      point3Key: 'Agents',
+      point3Desc: 'Plan autonomously, call tools, execute together',
+      point4Key: 'Platform',
+      point4Desc: 'Distilled into a deliverable, governable AIOS',
       statement:
-        'Industry knowledge becomes capability. Intelligence becomes part of everyday action.',
+        'Built end to end; delivered once, evolving always—intelligence becomes the organization’s own capability',
     },
     news: {
       title: 'News',
@@ -151,6 +156,7 @@ const MESSAGES = {
       topics: {
         'data-governance': {
           title: 'Data Governance',
+          question: 'How can scattered data become a foundation AI can trust?',
           summary:
             'We turn fragmented enterprise data into a trusted foundation that AI systems can retrieve, understand, and use with clear ownership and controls.',
           point1: 'Source integration and data cataloguing',
@@ -160,6 +166,7 @@ const MESSAGES = {
         },
         'model-engineering': {
           title: 'Model Engineering',
+          question: 'How do you choose and run the right model for each job?',
           summary:
             'We select, adapt, evaluate, and operate the right models for each workflow instead of forcing every business problem through a single model.',
           point1: 'Model selection and scenario evaluation',
@@ -169,6 +176,7 @@ const MESSAGES = {
         },
         'agent-development': {
           title: 'Agent Development',
+          question: 'How can AI reliably understand, act, and collaborate?',
           summary:
             'We package AI capabilities into dependable agents that understand context, use tools, coordinate work, and stay accountable to people.',
           point1: 'Workflow and tool orchestration',
@@ -178,6 +186,7 @@ const MESSAGES = {
         },
         'platform-build': {
           title: 'Platform Build',
+          question: 'How do you govern and scale intelligence over time?',
           summary:
             'We connect data, models, and agents through an AI-native platform that teams can govern, observe, and extend across the enterprise.',
           point1: 'Unified access and identity controls',
@@ -459,14 +468,19 @@ const MESSAGES = {
       feature3: '医疗助手 · AI-MDT 与分诊',
     },
     dailOverview: {
-      titleLine1: '不是一次性的 AI 项目。',
-      titleLine2: '是持续生长的行业智能。',
-      intro: 'DAIL 将可信数据、工程化模型与智能体，连接成一套可靠、可治理、可持续迭代的系统。',
-      verbAria: 'DAIL 构建、治理并落地行业智能',
-      verb1: '构建',
-      verb2: '治理',
-      verb3: '落地',
-      statement: '行业知识成为能力，智能真正进入组织的日常行动。',
+      titleLine1: '不做交付即终点的项目',
+      titleLine2: '做能自我进化的行业智能',
+      intro: '从数据到平台四层全栈自研，德工把可信数据、小而美模型与智能体，沉淀为可治理、可迭代的系统，让智能长在场景里、随业务持续生长',
+      pointsAria: 'DAIL 全栈四层：数据、模型、智能体、平台',
+      point1Key: '数据',
+      point1Desc: '高质量、合规、可追溯的数据底座',
+      point2Key: '模型',
+      point2Desc: '小而美模型，低成本、高性能、端到端',
+      point3Key: '智能体',
+      point3Desc: '自主规划、调用工具、协同执行任务',
+      point4Key: '平台',
+      point4Desc: '沉淀为可交付、可治理的 AIOS 平台',
+      statement: '全链自研，交付一次，进化不止——智能最终成为组织自己的能力',
     },
     news: {
       title: '新闻',
@@ -533,6 +547,7 @@ const MESSAGES = {
       topics: {
         'data-governance': {
           title: '数据治理',
+          question: '如何让分散的数据，成为 AI 可信的基础？',
           summary: '将分散的企业数据转化为可信的 AI 基础，让系统能够在明确的数据归属、权限和质量控制下检索、理解并使用数据。',
           point1: '多源数据接入与数据目录',
           point2: '数据质量、血缘与权限控制',
@@ -541,6 +556,7 @@ const MESSAGES = {
         },
         'model-engineering': {
           title: '模型工程',
+          question: '怎样为每个业务，选对并用好模型？',
           summary: '根据具体业务流程选择、适配、评估和运行合适的模型，而不是用单一模型处理所有企业问题。',
           point1: '模型选型与场景评测',
           point2: '微调训练与领域适配',
@@ -549,6 +565,7 @@ const MESSAGES = {
         },
         'agent-development': {
           title: '智能体开发',
+          question: 'AI 如何可靠地理解、调用并协作？',
           summary: '将 AI 能力封装为可靠的智能体，使其能够理解上下文、调用工具、协调任务，并始终接受人员监督。',
           point1: '业务工作流与工具编排',
           point2: '多智能体协作模式',
@@ -557,6 +574,7 @@ const MESSAGES = {
         },
         'platform-build': {
           title: '平台构建',
+          question: '怎样统一治理，并持续扩展智能能力？',
           summary: '通过 AI 原生平台连接数据、模型与智能体，使企业能够统一治理、观测并持续扩展智能能力。',
           point1: '统一访问与身份权限控制',
           point2: '智能体和模型生命周期管理',

@@ -3,10 +3,7 @@
     id="dail-overview"
     ref="sectionRef"
     class="dail-overview"
-    :class="{
-      'dail-overview--visible': isVisible,
-      'dail-overview--resetting': isResetting,
-    }"
+    :class="{ 'dail-overview--visible': isVisible }"
     :lang="i18n.locale"
     aria-labelledby="dail-overview-title"
   >
@@ -14,17 +11,11 @@
       <div class="overview-lead">
         <h2 id="dail-overview-title" class="overview-title">
           <span class="overview-title__line overview-title__line--first">
-            <span class="overview-title__echo" aria-hidden="true">
-              {{ t('dailOverview.titleLine1') }}
-            </span>
             <span class="overview-title__text">
               {{ t('dailOverview.titleLine1') }}
             </span>
           </span>
           <span class="overview-title__line overview-title__line--second">
-            <span class="overview-title__echo" aria-hidden="true">
-              {{ t('dailOverview.titleLine2') }}
-            </span>
             <span class="overview-title__text">
               {{ t('dailOverview.titleLine2') }}
             </span>
@@ -36,16 +27,20 @@
         <p>{{ t('dailOverview.intro') }}</p>
       </div>
 
-      <div class="overview-verbs" :aria-label="t('dailOverview.verbAria')">
-        <div
-          v-for="(verb, index) in verbs"
-          :key="verb"
-          class="overview-verb"
-          :style="{ '--verb-index': index }"
+      <ol class="overview-points" :aria-label="t('dailOverview.pointsAria')">
+        <li
+          v-for="(point, index) in points"
+          :key="point.key"
+          class="overview-point"
+          :style="{ '--point-index': index }"
         >
-          <span class="overview-verb__word">{{ verb }}</span>
-        </div>
-      </div>
+          <span class="overview-point__num" aria-hidden="true">
+            {{ String(index + 1).padStart(2, '0') }}
+          </span>
+          <span class="overview-point__key">{{ point.key }}</span>
+          <p class="overview-point__desc">{{ point.desc }}</p>
+        </li>
+      </ol>
 
       <div class="overview-close">
         <p>{{ t('dailOverview.statement') }}</p>
@@ -56,50 +51,29 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18nStore } from '@/stores/i18n'
 
 const i18n = useI18nStore()
 const sectionRef = ref(null)
 const isVisible = ref(false)
-const isResetting = ref(false)
 const t = (key, vars) => i18n.t(key, vars)
 
-const verbs = computed(() => [
-  t('dailOverview.verb1'),
-  t('dailOverview.verb2'),
-  t('dailOverview.verb3'),
+const points = computed(() => [
+  { key: t('dailOverview.point1Key'), desc: t('dailOverview.point1Desc') },
+  { key: t('dailOverview.point2Key'), desc: t('dailOverview.point2Desc') },
+  { key: t('dailOverview.point3Key'), desc: t('dailOverview.point3Desc') },
+  { key: t('dailOverview.point4Key'), desc: t('dailOverview.point4Desc') },
 ])
 
 const ENTRY_THRESHOLD = 0.24
-const TOP_RESET_Y = 8
 
 let observer = null
-let topCheckFrame = null
 
-const resetAnimationAtTop = async () => {
-  if (!isVisible.value || isResetting.value) return
-
-  isResetting.value = true
-  isVisible.value = false
-  await nextTick()
-
-  // Force the hidden state to settle without reverse animation while the section is offscreen.
-  sectionRef.value?.getBoundingClientRect()
-  isResetting.value = false
-}
-
-const checkTopReset = () => {
-  if (window.scrollY <= TOP_RESET_Y) resetAnimationAtTop()
-}
-
-const requestTopReset = () => {
-  if (topCheckFrame !== null) return
-
-  topCheckFrame = window.requestAnimationFrame(() => {
-    topCheckFrame = null
-    checkTopReset()
-  })
+const reveal = () => {
+  isVisible.value = true
+  observer?.disconnect()
+  observer = null
 }
 
 onMounted(() => {
@@ -112,14 +86,9 @@ onMounted(() => {
 
   observer = new IntersectionObserver(
     ([entry]) => {
-      if (
-        !entry?.isIntersecting
-        || entry.intersectionRatio < ENTRY_THRESHOLD
-        || window.scrollY <= TOP_RESET_Y
-        || isResetting.value
-      ) return
-
-      isVisible.value = true
+      if (!entry?.isIntersecting || entry.intersectionRatio < ENTRY_THRESHOLD) return
+      // Play the entrance once; keep everything visible afterwards.
+      reveal()
     },
     {
       threshold: [0, ENTRY_THRESHOLD],
@@ -128,14 +97,10 @@ onMounted(() => {
   )
 
   if (sectionRef.value) observer.observe(sectionRef.value)
-  window.addEventListener('scroll', requestTopReset, { passive: true })
-  requestTopReset()
 })
 
 onBeforeUnmount(() => {
   observer?.disconnect()
-  window.removeEventListener('scroll', requestTopReset)
-  if (topCheckFrame !== null) window.cancelAnimationFrame(topCheckFrame)
 })
 </script>
 
@@ -157,13 +122,12 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 1;
   display: grid;
-  width: min(100%, 1640px);
-  min-height: min(72svh, 760px);
+  width: min(100%, 1580px);
   margin: 0 auto;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto;
   column-gap: clamp(18px, 2.5vw, 48px);
-  row-gap: clamp(72px, 10vh, 126px);
+  row-gap: clamp(52px, 8vh, 104px);
 }
 
 .overview-lead {
@@ -176,21 +140,20 @@ onBeforeUnmount(() => {
   font: inherit;
   font-size: clamp(56px, 4.85vw, 94px);
   font-weight: 520;
-  line-height: 0.96;
-  letter-spacing: -0.068em;
+  line-height: 0.94;
+  letter-spacing: -0.072em;
   text-wrap: balance;
 }
 
 .overview-title__line {
   position: relative;
   display: block;
-  padding: 0 0.08em 0.09em 0;
+  padding: 0.02em 0.08em 0.2em 0;
   overflow: hidden;
   perspective: 900px;
 }
 
-.overview-title__text,
-.overview-title__echo {
+.overview-title__text {
   display: block;
   transform-origin: left bottom;
 }
@@ -204,85 +167,107 @@ onBeforeUnmount(() => {
 }
 
 .overview-title__line--first .overview-title__text {
-  transition-delay: 0.2s;
+  font-weight: 470;
+  transition-delay: 0.06s;
 }
 
 .overview-title__line--second .overview-title__text {
-  transition-delay: 0.36s;
-}
-
-.overview-title__echo {
-  position: absolute;
-  inset: 0.02em 0 auto;
-  color: transparent;
-  opacity: 0;
-  -webkit-text-stroke: 1px rgba(9, 9, 9, 0.24);
-  transform: translateY(112%) skewY(4deg);
+  font-weight: 545;
+  transition-delay: 0.2s;
 }
 
 .overview-intro {
   grid-column: 9 / -1;
-  align-self: end;
-  padding-bottom: 0.4em;
+  align-self: start;
+  padding-top: 0.55em;
   opacity: 0;
   clip-path: inset(0 0 100% 0);
-  transform: translateY(28px);
-  transition: opacity 0.55s ease 0.72s, clip-path 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.66s,
-    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.66s;
+  transform: translateY(22px);
+  transition: opacity 0.5s ease 0.34s,
+    clip-path 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.3s,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
 }
 
 .overview-intro p {
-  max-width: 33ch;
+  max-width: 35ch;
   font-size: clamp(18px, 1.42vw, 25px);
   font-weight: 430;
-  line-height: 1.45;
-  letter-spacing: -0.025em;
+  line-height: 1.5;
+  letter-spacing: -0.022em;
 }
 
-.overview-verbs {
+.overview-points {
+  grid-column: 1 / -1;
   display: grid;
-  grid-column: 1 / span 6;
-  align-self: end;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: clamp(20px, 3vw, 56px);
+  list-style: none;
 }
 
-.overview-verb {
+.overview-point {
+  position: relative;
   display: grid;
-  min-height: clamp(68px, 8vh, 92px);
-  padding: 8px 0 10px;
-  overflow: hidden;
-  grid-template-columns: 1fr;
-  align-items: end;
+  align-content: start;
+  padding-top: clamp(16px, 1.5vw, 24px);
+  row-gap: clamp(12px, 1.1vw, 18px);
 }
 
-.overview-verb__word {
-  font-size: clamp(38px, 4vw, 70px);
-  font-weight: 500;
-  line-height: 0.95;
-  letter-spacing: -0.07em;
+.overview-point__num {
+  font-size: clamp(13px, 0.95vw, 15px);
+  font-weight: 520;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(9, 9, 9, 0.42);
+}
+
+.overview-point__key {
+  font-size: clamp(28px, 2.55vw, 46px);
+  font-weight: 530;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.overview-point__desc {
+  max-width: 22ch;
+  margin: 0;
+  font-size: clamp(14px, 1.02vw, 17px);
+  font-weight: 420;
+  line-height: 1.5;
+  letter-spacing: -0.012em;
+  color: rgba(9, 9, 9, 0.7);
+}
+
+.overview-point__num,
+.overview-point__key,
+.overview-point__desc {
   opacity: 0;
-  filter: blur(8px);
-  transform: translateX(calc(-42px - var(--verb-index) * 12px)) skewX(-12deg);
-  transition: opacity 0.45s ease calc(0.82s + var(--verb-index) * 0.12s),
-    filter 0.8s ease calc(0.82s + var(--verb-index) * 0.12s),
-    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) calc(0.82s + var(--verb-index) * 0.12s);
+  transform: translateY(20px);
+  transition: opacity 0.5s ease calc(0.5s + var(--point-index) * 0.1s),
+    transform 0.72s cubic-bezier(0.16, 1, 0.3, 1)
+      calc(0.5s + var(--point-index) * 0.1s);
 }
 
 .overview-close {
-  grid-column: 8 / -1;
-  align-self: end;
-  padding: clamp(28px, 4vw, 64px) 0 4px clamp(0px, 2vw, 34px);
+  grid-column: 1 / -1;
+  justify-self: end;
+  padding: 0;
+  text-align: right;
   opacity: 0;
-  transform: translateY(34px);
-  transition: opacity 0.65s ease 1.18s, transform 1s cubic-bezier(0.22, 1, 0.36, 1) 1.12s;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease 0.98s,
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.94s;
 }
 
 .overview-close p {
-  max-width: 20ch;
-  font-size: clamp(27px, 2.7vw, 48px);
-  font-weight: 470;
-  line-height: 1.12;
-  letter-spacing: -0.055em;
+  max-width: 40ch;
+  font-size: clamp(20px, 1.9vw, 32px);
+  font-weight: 460;
+  line-height: 1.24;
+  letter-spacing: -0.03em;
   text-wrap: balance;
+  color: rgba(9, 9, 9, 0.86);
 }
 
 .dail-overview--visible .overview-intro,
@@ -292,46 +277,17 @@ onBeforeUnmount(() => {
   transform: translateY(0);
 }
 
-.dail-overview--visible .overview-title__text,
-.dail-overview--visible .overview-verb__word {
+.dail-overview--visible .overview-point__num,
+.dail-overview--visible .overview-point__key,
+.dail-overview--visible .overview-point__desc {
   opacity: 1;
-  filter: blur(0);
   transform: none;
 }
 
-.dail-overview--visible .overview-title__echo {
-  animation: overview-title-echo 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.dail-overview--visible .overview-title__line--first .overview-title__echo {
-  animation-delay: 0.14s;
-}
-
-.dail-overview--visible .overview-title__line--second .overview-title__echo {
-  animation-delay: 0.3s;
-}
-
-.dail-overview--resetting .overview-intro,
-.dail-overview--resetting .overview-close,
-.dail-overview--resetting .overview-title__text,
-.dail-overview--resetting .overview-title__echo,
-.dail-overview--resetting .overview-verb__word {
-  animation: none !important;
-  transition: none !important;
-}
-
-@keyframes overview-title-echo {
-  0% {
-    opacity: 0;
-    transform: translateY(112%) skewY(4deg);
-  }
-  38% {
-    opacity: 0.52;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-44%) skewY(-2deg);
-  }
+.dail-overview--visible .overview-title__text {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
 }
 
 @media (min-width: 901px) {
@@ -355,7 +311,7 @@ onBeforeUnmount(() => {
 
   .overview-lead,
   .overview-intro,
-  .overview-verbs,
+  .overview-points,
   .overview-close {
     grid-column: 1;
   }
@@ -372,6 +328,7 @@ onBeforeUnmount(() => {
     max-width: 34rem;
     margin-top: 28px;
     justify-self: start;
+    padding-top: 0;
     padding-bottom: 0;
   }
 
@@ -381,43 +338,44 @@ onBeforeUnmount(() => {
     line-height: 1.62;
   }
 
-  .overview-verbs {
+  .overview-points {
     width: 100%;
     margin-top: 34px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 18px;
+    row-gap: 26px;
   }
 
-  .overview-verb {
-    min-height: 44px;
-    padding: 0;
-    grid-template-columns: 1fr;
-    align-items: center;
+  .overview-point {
+    padding-top: 12px;
+    row-gap: 8px;
   }
 
-  .overview-verb__word {
-    font-size: clamp(29px, 8.4vw, 38px);
-    line-height: 1;
-    letter-spacing: -0.06em;
+  .overview-point__key {
+    font-size: clamp(24px, 6.6vw, 32px);
+  }
+
+  .overview-point__desc {
+    max-width: none;
+    font-size: clamp(13px, 3.6vw, 15px);
+    line-height: 1.5;
   }
 
   .overview-close {
-    margin-top: 42px;
+    margin-top: 40px;
     padding: 0;
+    justify-self: start;
+    text-align: left;
   }
 
   .overview-close p {
-    max-width: 20ch;
-    font-size: clamp(26px, 7.2vw, 34px);
-    line-height: 1.14;
-    letter-spacing: -0.05em;
+    max-width: 26ch;
+    font-size: clamp(20px, 5.6vw, 26px);
+    line-height: 1.24;
+    letter-spacing: -0.03em;
   }
 
-  /* 手机端减少模糊和残影运算，并缩短错峰等待。 */
-  .overview-title__echo {
-    display: none;
-  }
-
+  /* 手机端减少模糊运算，并缩短错峰等待。 */
   .overview-title__text {
     filter: none;
     transform: translateY(46%);
@@ -439,17 +397,18 @@ onBeforeUnmount(() => {
       transform 0.58s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
   }
 
-  .overview-verb__word {
-    filter: none;
-    transform: translateX(-24px);
-    transition: opacity 0.32s ease calc(0.34s + var(--verb-index) * 0.08s),
-      transform 0.58s cubic-bezier(0.16, 1, 0.3, 1)
-        calc(0.34s + var(--verb-index) * 0.08s);
+  .overview-point__num,
+  .overview-point__key,
+  .overview-point__desc {
+    transform: translateY(14px);
+    transition: opacity 0.32s ease calc(0.3s + var(--point-index) * 0.08s),
+      transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)
+        calc(0.3s + var(--point-index) * 0.08s);
   }
 
   .overview-close {
-    transition: opacity 0.38s ease 0.54s,
-      transform 0.62s cubic-bezier(0.22, 1, 0.36, 1) 0.5s;
+    transition: opacity 0.38s ease 0.62s,
+      transform 0.62s cubic-bezier(0.22, 1, 0.36, 1) 0.58s;
   }
 }
 
@@ -463,17 +422,14 @@ onBeforeUnmount(() => {
   .overview-intro,
   .overview-close,
   .overview-title__text,
-  .overview-verb__word {
+  .overview-point__num,
+  .overview-point__key,
+  .overview-point__desc {
     opacity: 1;
     clip-path: none;
     filter: none;
     transform: none;
     transition: none;
-  }
-
-  .overview-title__echo {
-    display: none;
-    animation: none;
   }
 }
 </style>

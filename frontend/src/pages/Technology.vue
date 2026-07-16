@@ -17,10 +17,32 @@
       @transitionend="handleNetworkTransitionEnd"
     >
       <svg class="network-lines" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
-        <path pathLength="1" d="M735 425 L395 275" />
-        <path pathLength="1" d="M865 425 L1205 215" />
-        <path pathLength="1" d="M735 475 L405 665" />
-        <path pathLength="1" d="M865 475 L1200 690" />
+        <defs>
+          <linearGradient id="nl1" gradientUnits="userSpaceOnUse" x1="700" y1="432" x2="300" y2="252">
+            <stop offset="0" stop-color="#faf9f5" stop-opacity="0" />
+            <stop offset="0.55" stop-color="#faf9f5" stop-opacity="0.06" />
+            <stop offset="1" stop-color="#faf9f5" stop-opacity="0.34" />
+          </linearGradient>
+          <linearGradient id="nl2" gradientUnits="userSpaceOnUse" x1="900" y1="432" x2="1320" y2="200">
+            <stop offset="0" stop-color="#faf9f5" stop-opacity="0" />
+            <stop offset="0.55" stop-color="#faf9f5" stop-opacity="0.06" />
+            <stop offset="1" stop-color="#faf9f5" stop-opacity="0.34" />
+          </linearGradient>
+          <linearGradient id="nl3" gradientUnits="userSpaceOnUse" x1="700" y1="468" x2="330" y2="694">
+            <stop offset="0" stop-color="#faf9f5" stop-opacity="0" />
+            <stop offset="0.55" stop-color="#faf9f5" stop-opacity="0.06" />
+            <stop offset="1" stop-color="#faf9f5" stop-opacity="0.34" />
+          </linearGradient>
+          <linearGradient id="nl4" gradientUnits="userSpaceOnUse" x1="900" y1="468" x2="1300" y2="742">
+            <stop offset="0" stop-color="#faf9f5" stop-opacity="0" />
+            <stop offset="0.55" stop-color="#faf9f5" stop-opacity="0.06" />
+            <stop offset="1" stop-color="#faf9f5" stop-opacity="0.34" />
+          </linearGradient>
+        </defs>
+        <path class="nl-line nl-line--1" pathLength="1" stroke="url(#nl1)" d="M700 432 L300 252" />
+        <path class="nl-line nl-line--2" pathLength="1" stroke="url(#nl2)" d="M900 432 L1320 200" />
+        <path class="nl-line nl-line--3" pathLength="1" stroke="url(#nl3)" d="M700 468 L330 694" />
+        <path class="nl-line nl-line--4" pathLength="1" stroke="url(#nl4)" d="M900 468 L1300 742" />
       </svg>
 
       <div class="network-topics" :aria-hidden="!branchesInteractive">
@@ -33,9 +55,7 @@
           :tabindex="branchesInteractive ? 0 : -1"
           @click="selectTopic(topic)"
         >
-          <span class="topic-number">{{ topic.index }}</span>
           <span class="topic-name">{{ topic.title }}</span>
-          <span class="topic-arrow" aria-hidden="true">↗</span>
         </button>
       </div>
 
@@ -89,6 +109,7 @@ const topics = computed(() => topicIds.map((id, index) => ({
   id,
   index: String(index + 1).padStart(2, '0'),
   title: t(`technologyPage.topics.${id}.title`),
+  question: t(`technologyPage.topics.${id}.question`),
   summary: t(`technologyPage.topics.${id}.summary`),
   points: [1, 2, 3, 4].map((point) => t(`technologyPage.topics.${id}.point${point}`)),
 })))
@@ -530,27 +551,37 @@ onBeforeUnmount(() => {
 .network-lines {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  opacity: 1;
   pointer-events: none;
   transition: opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.network-lines path {
+.nl-line {
   fill: none;
-  stroke: rgba(250, 249, 245, 0.23);
-  stroke-width: 1.2;
+  stroke-width: 1.6;
+  stroke-linecap: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   opacity: 0;
   vector-effect: non-scaling-stroke;
-  transition: stroke-dashoffset 0.9s ease, opacity 0.55s ease;
+  transition:
+    stroke-dashoffset 1.15s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.7s ease;
 }
 
-.network--branches-visible .network-lines path {
+.network--branches-visible .nl-line {
   stroke-dashoffset: 0;
   opacity: 1;
+}
+
+.network--branches-visible .nl-line--2 { transition-delay: 0.09s; }
+.network--branches-visible .nl-line--3 { transition-delay: 0.18s; }
+.network--branches-visible .nl-line--4 { transition-delay: 0.27s; }
+
+.network--branches-retreated .network-lines {
+  opacity: 0;
 }
 
 .network-copy {
@@ -610,7 +641,6 @@ h1 {
     transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.network--branches-retreated .network-lines,
 .network--branches-retreated .network-support,
 .network--branches-retreated .network-topics {
   opacity: 0;
@@ -624,21 +654,18 @@ h1 {
 .topic {
   position: absolute;
   z-index: 2;
-  display: grid;
-  width: clamp(180px, 17vw, 280px);
-  padding: 12px 0;
-  grid-template-columns: auto 1fr auto;
-  align-items: end;
-  gap: 10px;
+  display: block;
+  width: clamp(200px, 17vw, 268px);
+  padding: 0;
   border: 0;
   background: transparent;
-  color: #ffffff;
+  color: rgba(250, 249, 245, 0.58);
   text-align: left;
   cursor: pointer;
   opacity: 0;
-  transform: translateY(18px);
+  transform: translateY(14px);
   pointer-events: none;
-  transition: color 0.2s ease, opacity 0.6s ease, transform 0.6s ease;
+  transition: color 0.35s ease, opacity 0.7s ease, transform 0.7s ease;
 }
 
 .network--branches-visible .topic {
@@ -650,9 +677,9 @@ h1 {
   pointer-events: auto;
 }
 
-.network--branches-visible .topic--2 { transition-delay: 0.08s; }
-.network--branches-visible .topic--3 { transition-delay: 0.16s; }
-.network--branches-visible .topic--4 { transition-delay: 0.24s; }
+.network--branches-visible .topic--2 { transition-delay: 0.09s; }
+.network--branches-visible .topic--3 { transition-delay: 0.18s; }
+.network--branches-visible .topic--4 { transition-delay: 0.27s; }
 
 .topic:hover,
 .topic:focus-visible,
@@ -661,27 +688,18 @@ h1 {
   outline: none;
 }
 
-.topic--1 { top: 28%; left: 7%; }
-.topic--2 { top: 17%; right: 8%; }
-.topic--3 { bottom: 17%; left: 11%; }
-.topic--4 { right: 9%; bottom: 12%; }
-
-.topic-number {
-  align-self: start;
-  color: rgba(250, 249, 245, 0.38);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-}
+/* 非对称散布：靠近中央、松散呼应第一张的星座式排布 */
+.topic--1 { top: 27%; left: 8.5%; text-align: left; }
+.topic--2 { top: 20%; right: 8%; text-align: right; }
+.topic--3 { bottom: 22%; left: 11.5%; text-align: left; }
+.topic--4 { right: 9.5%; bottom: 16%; text-align: right; }
 
 .topic-name {
-  color: #ffffff;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(22px, 2.3vw, 38px);
-  line-height: 1;
-}
-
-.topic-arrow {
-  font-size: 14px;
+  display: block;
+  font-size: clamp(19px, 1.9vw, 30px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
 }
 
 @media (min-width: 901px) {
@@ -749,11 +767,11 @@ h1 {
     position: relative;
     inset: auto;
     display: grid;
-    width: min(100%, 440px);
-    margin: clamp(72px, 10svh, 92px) auto 0;
+    width: min(100%, 420px);
+    margin: clamp(56px, 8svh, 76px) auto 0;
     order: 2;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
     transform: none;
   }
 
@@ -784,74 +802,19 @@ h1 {
     inset: auto;
     width: auto;
     min-width: 0;
-    min-height: 82px;
     margin: 0;
-    padding: 12px;
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto 1fr;
-    align-items: start;
-    gap: 8px 6px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.035);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    text-align: center;
     transform: translateY(10px);
     transition: color 0.2s ease, opacity 0.3s ease, transform 0.3s ease;
   }
 
-  .network-topics::before,
-  .network-topics::after,
-  .topic::before {
-    content: '';
-    position: absolute;
-    background: rgba(250, 249, 245, 0.26);
-    pointer-events: none;
-  }
-
-  .network-topics::before {
-    left: 50%;
-    top: -58px;
-    width: 1px;
-    height: 38px;
-  }
-
-  .network-topics::after {
-    top: -20px;
-    left: 25%;
-    right: 25%;
-    height: 1px;
-  }
-
-  .topic::before {
-    left: 50%;
-    top: -20px;
-    width: 1px;
-    height: 20px;
-  }
-
-  .topic--3::before,
-  .topic--4::before {
-    top: -15px;
-    height: 15px;
-  }
-
   .topic-name {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    align-self: end;
-    font-size: clamp(17px, 5vw, 22px);
-    line-height: 1.05;
-  }
-
-  .topic-number {
-    grid-column: 1;
-    grid-row: 1;
-    font-size: 9px;
-  }
-
-  .topic-arrow {
-    grid-column: 2;
-    grid-row: 1;
-    font-size: 12px;
+    font-size: clamp(18px, 5vw, 24px);
+    line-height: 1.3;
   }
 
   .network--branches-visible .topic--2 {
@@ -891,15 +854,6 @@ h1 {
     gap: 12px;
   }
 
-  .topic,
-  .topic--1,
-  .topic--2,
-  .topic--3,
-  .topic--4 {
-    min-height: 68px;
-    padding: 10px;
-  }
-
   .topic-name {
     font-size: clamp(15px, 4.8vw, 18px);
   }
@@ -908,9 +862,15 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .topic,
   .network-lines,
+  .nl-line,
   .network-topics,
   .network-support {
     transition: none;
+  }
+
+  .nl-line {
+    stroke-dashoffset: 0;
+    opacity: 1;
   }
 
   .network-copy,
@@ -933,11 +893,6 @@ h1 {
 
   .technology-page--embedded {
     min-height: 100svh;
-  }
-
-  .network-lines path {
-    stroke-dashoffset: 0;
-    opacity: 1;
   }
 }
 
