@@ -23,8 +23,23 @@
         </h2>
       </div>
 
-      <div class="overview-intro">
-        <p>{{ t('dailOverview.intro') }}</p>
+      <div
+        class="overview-display"
+        :class="{ 'overview-display--active': activePoint !== null }"
+      >
+        <div class="overview-display__frame">
+          <div class="overview-intro">
+            <p>{{ t('dailOverview.intro') }}</p>
+          </div>
+          <div
+            v-for="(point, index) in points"
+            :key="point.key"
+            class="overview-display__img"
+            :class="{ 'is-active': activePoint === index }"
+            :style="{ backgroundImage: `url(${point.img})` }"
+            aria-hidden="true"
+          ></div>
+        </div>
       </div>
 
       <ol class="overview-points" :aria-label="t('dailOverview.pointsAria')">
@@ -32,7 +47,16 @@
           v-for="(point, index) in points"
           :key="point.key"
           class="overview-point"
+          :class="{
+            'is-active': activePoint === index,
+            'is-dim': activePoint !== null && activePoint !== index,
+          }"
           :style="{ '--point-index': index }"
+          tabindex="0"
+          @mouseenter="setActive(index)"
+          @mouseleave="clearActive"
+          @focusin="setActive(index)"
+          @focusout="clearActive"
         >
           <span class="overview-point__num" aria-hidden="true">
             {{ String(index + 1).padStart(2, '0') }}
@@ -46,29 +70,53 @@
         <p>{{ t('dailOverview.statement') }}</p>
       </div>
     </div>
-
   </section>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18nStore } from '@/stores/i18n'
+import imgData from '@/assets/images/overview/data.svg'
+import imgModels from '@/assets/images/overview/models.svg'
+import imgAgents from '@/assets/images/overview/agents.svg'
+import imgPlatform from '@/assets/images/overview/platform.svg'
 
 const i18n = useI18nStore()
 const sectionRef = ref(null)
 const isVisible = ref(false)
 const t = (key, vars) => i18n.t(key, vars)
 
+const pointImages = [imgData, imgModels, imgAgents, imgPlatform]
+
 const points = computed(() => [
-  { key: t('dailOverview.point1Key'), desc: t('dailOverview.point1Desc') },
-  { key: t('dailOverview.point2Key'), desc: t('dailOverview.point2Desc') },
-  { key: t('dailOverview.point3Key'), desc: t('dailOverview.point3Desc') },
-  { key: t('dailOverview.point4Key'), desc: t('dailOverview.point4Desc') },
+  { key: t('dailOverview.point1Key'), desc: t('dailOverview.point1Desc'), img: pointImages[0] },
+  { key: t('dailOverview.point2Key'), desc: t('dailOverview.point2Desc'), img: pointImages[1] },
+  { key: t('dailOverview.point3Key'), desc: t('dailOverview.point3Desc'), img: pointImages[2] },
+  { key: t('dailOverview.point4Key'), desc: t('dailOverview.point4Desc'), img: pointImages[3] },
 ])
 
 const ENTRY_THRESHOLD = 0.24
 
+const activePoint = ref(null)
+const isInteractive = ref(false)
+
+const setActive = (index) => {
+  if (!isInteractive.value) return
+  activePoint.value = index
+}
+
+const clearActive = () => {
+  if (!isInteractive.value) return
+  activePoint.value = null
+}
+
 let observer = null
+let desktopQuery = null
+
+const syncInteractive = (event) => {
+  isInteractive.value = event.matches
+  if (!event.matches) activePoint.value = null
+}
 
 const reveal = () => {
   isVisible.value = true
@@ -77,6 +125,10 @@ const reveal = () => {
 }
 
 onMounted(() => {
+  desktopQuery = window.matchMedia('(min-width: 901px)')
+  isInteractive.value = desktopQuery.matches
+  desktopQuery.addEventListener('change', syncInteractive)
+
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   if (reduceMotion || !('IntersectionObserver' in window)) {
@@ -101,6 +153,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  desktopQuery?.removeEventListener('change', syncInteractive)
 })
 </script>
 
@@ -125,20 +178,39 @@ onBeforeUnmount(() => {
   width: min(100%, 1580px);
   margin: 0 auto;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: auto auto auto;
-  column-gap: clamp(18px, 2.5vw, 48px);
+  grid-template-rows: auto auto;
+  column-gap: clamp(28px, 4vw, 84px);
   row-gap: clamp(52px, 8vh, 104px);
 }
 
+/* 64 开：左区（标题 + 关键点）占约 6，右区（展示图/说明 + 理念句）占约 4。 */
 .overview-lead {
-  grid-column: 1 / span 8;
+  grid-column: 1 / span 7;
+  grid-row: 1;
+  align-self: start;
+}
+
+.overview-display {
+  grid-column: 8 / -1;
+  grid-row: 1;
+  align-self: start;
+}
+
+.overview-points {
+  grid-column: 1 / span 7;
+  grid-row: 2;
+}
+
+.overview-close {
+  grid-column: 8 / -1;
+  grid-row: 2;
 }
 
 .overview-title {
   max-width: none;
   margin: 0;
   font: inherit;
-  font-size: clamp(56px, 4.85vw, 94px);
+  font-size: clamp(52px, 4.55vw, 88px);
   font-weight: 520;
   line-height: 0.94;
   letter-spacing: -0.072em;
@@ -176,10 +248,17 @@ onBeforeUnmount(() => {
   transition-delay: 0.2s;
 }
 
+/* 右上区：默认显示说明文字，hover 关键点时切换为对应展示图，比例固定不跳动。 */
+.overview-display__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+}
+
 .overview-intro {
-  grid-column: 9 / -1;
-  align-self: start;
-  padding-top: 0.55em;
+  position: absolute;
+  inset: 0;
+  padding-top: 0.35em;
   opacity: 0;
   clip-path: inset(0 0 100% 0);
   transform: translateY(22px);
@@ -190,19 +269,52 @@ onBeforeUnmount(() => {
 
 .overview-intro p {
   max-width: 35ch;
+  margin: 0;
   font-size: clamp(18px, 1.42vw, 25px);
   font-weight: 430;
   line-height: 1.5;
   letter-spacing: -0.022em;
 }
 
+.overview-display__img {
+  position: absolute;
+  inset: 0;
+  background-color: #f4f4f4;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-radius: 2px;
+  opacity: 0;
+  filter: blur(10px);
+  transform: scale(1.03);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.overview-display__img.is-active {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+/* hover 激活某个关键点时，说明文字克制地上移淡出。 */
+.dail-overview--visible .overview-display--active .overview-intro {
+  opacity: 0;
+  clip-path: inset(0 0 0 0);
+  transform: translateY(-10px);
+  filter: blur(6px);
+  transition: opacity 0.4s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.45s ease;
+}
+
 .overview-points {
-  grid-column: 1 / -1;
   display: grid;
   margin: 0;
   padding: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  column-gap: clamp(20px, 3vw, 56px);
+  column-gap: clamp(18px, 2vw, 40px);
   list-style: none;
 }
 
@@ -212,6 +324,41 @@ onBeforeUnmount(() => {
   align-content: start;
   padding-top: clamp(16px, 1.5vw, 24px);
   row-gap: clamp(12px, 1.1vw, 18px);
+  cursor: default;
+  outline: none;
+  transition: opacity 0.45s ease;
+}
+
+/* 顶部细线：hover 时从左展开，作为克制的可交互反馈。 */
+.overview-point::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(9, 9, 9, 0.16);
+}
+
+.overview-point::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #090909;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overview-point.is-active::after {
+  transform: scaleX(1);
+}
+
+.overview-point.is-dim {
+  opacity: 0.4;
 }
 
 .overview-point__num {
@@ -223,7 +370,7 @@ onBeforeUnmount(() => {
 }
 
 .overview-point__key {
-  font-size: clamp(28px, 2.55vw, 46px);
+  font-size: clamp(26px, 2.35vw, 42px);
   font-weight: 530;
   line-height: 1;
   letter-spacing: -0.045em;
@@ -250,7 +397,7 @@ onBeforeUnmount(() => {
 }
 
 .overview-close {
-  grid-column: 1 / -1;
+  align-self: end;
   justify-self: end;
   padding: 0;
   text-align: right;
@@ -262,6 +409,7 @@ onBeforeUnmount(() => {
 
 .overview-close p {
   max-width: 40ch;
+  margin: 0;
   font-size: clamp(20px, 1.9vw, 32px);
   font-weight: 460;
   line-height: 1.24;
@@ -310,10 +458,11 @@ onBeforeUnmount(() => {
   }
 
   .overview-lead,
-  .overview-intro,
+  .overview-display,
   .overview-points,
   .overview-close {
     grid-column: 1;
+    grid-row: auto;
   }
 
   .overview-title {
@@ -323,13 +472,26 @@ onBeforeUnmount(() => {
     letter-spacing: -0.07em;
   }
 
-  .overview-intro {
+  /* 移动端不启用 hover 图片切换，右上区仅保留说明文字，恢复自然流。 */
+  .overview-display {
     width: 100%;
     max-width: 34rem;
     margin-top: 28px;
     justify-self: start;
+  }
+
+  .overview-display__frame {
+    aspect-ratio: auto;
+  }
+
+  .overview-intro {
+    position: static;
+    inset: auto;
     padding-top: 0;
-    padding-bottom: 0;
+  }
+
+  .overview-display__img {
+    display: none;
   }
 
   .overview-intro p {
@@ -424,12 +586,22 @@ onBeforeUnmount(() => {
   .overview-title__text,
   .overview-point__num,
   .overview-point__key,
-  .overview-point__desc {
+  .overview-point__desc,
+  .overview-display__img,
+  .overview-point::after {
     opacity: 1;
     clip-path: none;
     filter: none;
     transform: none;
     transition: none;
+  }
+
+  .overview-display__img {
+    opacity: 0;
+  }
+
+  .overview-display__img.is-active {
+    opacity: 1;
   }
 }
 </style>
