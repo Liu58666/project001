@@ -47,7 +47,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18nStore } from '@/stores/i18n'
-import nemoFront from '@/assets/images/nemo-one/nemo-front.png'
+import nemoFront from '@/assets/images/nemo-one/nemo-cooling.png'
 
 const i18n = useI18nStore()
 const t = (key) => i18n.t(key)
@@ -56,8 +56,48 @@ const sectionRef = ref(null)
 const isVisible = ref(false)
 
 let observer = null
+let parallaxFrame = null
 
 const clamp = (value, min = -1, max = 1) => Math.min(max, Math.max(min, value))
+
+const updateParallax = () => {
+  parallaxFrame = null
+
+  const section = sectionRef.value
+  if (!section) return
+
+  const bounds = section.getBoundingClientRect()
+  const viewportHeight = window.innerHeight || 1
+  const themeSwitchLine = document.querySelector('.nav')?.getBoundingClientRect().height
+    || (window.innerWidth <= 900 ? 68 : 80)
+  document.body.classList.toggle(
+    'nemo-showcase-active',
+    bounds.top <= themeSwitchLine && bounds.bottom > themeSwitchLine,
+  )
+
+  const supportsParallax = window.matchMedia(
+    '(min-width: 901px) and (prefers-reduced-motion: no-preference)',
+  ).matches
+
+  if (!supportsParallax) {
+    section.style.setProperty('--copy-parallax-y', '0px')
+    section.style.setProperty('--product-parallax-y', '0px')
+    return
+  }
+
+  const scrollDistance = Math.max(1, section.offsetHeight - viewportHeight)
+  const progress = clamp(-bounds.top / scrollDistance, 0, 1)
+  const easedProgress = progress * progress * (3 - 2 * progress)
+  const direction = easedProgress * 2 - 1
+
+  section.style.setProperty('--copy-parallax-y', `${(-direction * 52).toFixed(2)}px`)
+  section.style.setProperty('--product-parallax-y', `${(direction * 38).toFixed(2)}px`)
+}
+
+const requestParallaxUpdate = () => {
+  if (parallaxFrame !== null) return
+  parallaxFrame = window.requestAnimationFrame(updateParallax)
+}
 
 const handlePointerMove = (event) => {
   if (!window.matchMedia('(pointer: fine) and (min-width: 901px)').matches) return
@@ -82,11 +122,14 @@ onMounted(() => {
   const section = sectionRef.value
   if (!section) return
 
+  updateParallax()
+  window.addEventListener('scroll', requestParallaxUpdate, { passive: true })
+  window.addEventListener('resize', requestParallaxUpdate, { passive: true })
+
   if ('IntersectionObserver' in window) {
     observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.intersectionRatio >= 0.1) isVisible.value = true
-        document.body.classList.toggle('nemo-showcase-active', entry.isIntersecting)
       },
       { threshold: [0, 0.1, 0.5] },
     )
@@ -98,6 +141,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  window.removeEventListener('scroll', requestParallaxUpdate)
+  window.removeEventListener('resize', requestParallaxUpdate)
+  if (parallaxFrame !== null) window.cancelAnimationFrame(parallaxFrame)
   resetPointer()
   document.body.classList.remove('nemo-showcase-active')
 })
@@ -107,11 +153,13 @@ onBeforeUnmount(() => {
 .nemo-one-showcase {
   --pointer-x: 0px;
   --pointer-y: 0px;
+  --copy-parallax-y: 0px;
+  --product-parallax-y: 0px;
   position: relative;
   z-index: 2;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
+  min-height: 148vh;
+  min-height: 148svh;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -122,10 +170,11 @@ onBeforeUnmount(() => {
 }
 
 .nemo-stage {
-  position: relative;
+  position: sticky;
+  top: 0;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
+  height: 100vh;
+  height: 100svh;
   overflow: hidden;
   background: #000000;
 }
@@ -174,13 +223,13 @@ onBeforeUnmount(() => {
   left: clamp(34px, 6vw, 112px);
   width: min(39vw, 600px);
   opacity: 0;
-  transform: translate3d(0, 24px, 0);
+  transform: translate3d(0, calc(24px + var(--copy-parallax-y)), 0);
   transition: opacity 1s ease 0.12s, transform 1.15s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
 }
 
 .nemo-one-showcase--visible .nemo-copy {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(0, var(--copy-parallax-y), 0);
 }
 
 .nemo-eyebrow {
@@ -222,19 +271,19 @@ onBeforeUnmount(() => {
 .nemo-product-shell {
   position: absolute;
   z-index: 2;
-  top: 52%;
-  right: clamp(-190px, -7vw, -68px);
-  width: min(104vw, 1660px);
-  height: min(86vh, 880px);
+  top: 54%;
+  right: clamp(-90px, -3vw, -34px);
+  width: min(88vw, 1240px);
+  height: min(74vh, 700px);
   opacity: 0;
   transform: translate3d(
       calc(var(--pointer-x) + 18px),
-      calc(-50% + var(--pointer-y) + 18px),
+      calc(-50% + var(--pointer-y) + var(--product-parallax-y) + 96px),
       0
     )
-    scale(0.94);
+    scale(0.955);
   transform-origin: 62% 54%;
-  transition: opacity 1.2s ease 0.1s, transform 1.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
+  transition: opacity 0.78s ease 0.08s, transform 0.96s cubic-bezier(0.16, 1, 0.3, 1) 0.08s;
   will-change: transform, opacity;
 }
 
@@ -242,7 +291,7 @@ onBeforeUnmount(() => {
   opacity: 1;
   transform: translate3d(
       var(--pointer-x),
-      calc(-50% + var(--pointer-y)),
+      calc(-50% + var(--pointer-y) + var(--product-parallax-y)),
       0
     )
     scale(1);
@@ -369,6 +418,16 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 900px) {
+  .nemo-one-showcase {
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+
+  .nemo-stage {
+    position: relative;
+    top: auto;
+  }
+
   .nemo-copy {
     top: clamp(94px, 13svh, 124px);
     left: 22px;
@@ -476,9 +535,9 @@ onBeforeUnmount(() => {
 <style>
 body.nemo-showcase-active .nav,
 body.nemo-showcase-active .nav.scrolled {
-  background: rgba(0, 0, 0, 0.86);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(18px);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 body.nemo-showcase-active .nav .logo {
@@ -550,8 +609,9 @@ body.nemo-showcase-active .nav .menu-toggle span {
 @media (max-width: 900px) {
   body.nemo-showcase-active .nav,
   body.nemo-showcase-active .nav.scrolled {
-    background: rgba(0, 0, 0, 0.9);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   body.nemo-showcase-active .nav .menu--open {

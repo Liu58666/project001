@@ -631,9 +631,9 @@ onBeforeUnmount(() => {
 @media (min-width: 901px) {
   body.company-orbit-dark .nav,
   body.company-orbit-dark .nav.scrolled {
-    background: rgba(0, 0, 0, 0.86);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(18px);
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   body.company-orbit-dark .nav .logo {
@@ -698,8 +698,9 @@ onBeforeUnmount(() => {
 @media (max-width: 900px) {
   body.company-orbit-dark .nav,
   body.company-orbit-dark .nav.scrolled {
-    background: rgba(0, 0, 0, 0.9);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   body.company-orbit-dark .nav .logo {

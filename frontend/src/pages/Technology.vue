@@ -9,36 +9,11 @@
       :class="{
         'network--center-visible': centerVisible,
         'network--expanded': expansionStarted,
-        'network--branches-visible': branchesVisible,
-        'network--branches-interactive': branchesInteractive,
-        'network--branches-retreated': branchesRetreated,
+        'network--handoff-active': handoffActive,
       }"
       aria-labelledby="network-title"
       @transitionend="handleNetworkTransitionEnd"
     >
-      <svg class="network-lines" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
-        <path pathLength="1" d="M735 425 L395 275" />
-        <path pathLength="1" d="M865 425 L1205 215" />
-        <path pathLength="1" d="M735 475 L405 665" />
-        <path pathLength="1" d="M865 475 L1200 690" />
-      </svg>
-
-      <div class="network-topics" :aria-hidden="!branchesInteractive">
-        <button
-          v-for="(topic, index) in topics"
-          :key="topic.id"
-          class="topic"
-          :class="`topic--${index + 1}`"
-          type="button"
-          :tabindex="branchesInteractive ? 0 : -1"
-          @click="selectTopic(topic)"
-        >
-          <span class="topic-number">{{ topic.index }}</span>
-          <span class="topic-name">{{ topic.title }}</span>
-          <span class="topic-arrow" aria-hidden="true">↗</span>
-        </button>
-      </div>
-
       <div class="network-copy">
         <h1 id="network-title">{{ t('technologyPage.mapTitle') }}</h1>
         <div class="network-support">
@@ -51,8 +26,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18nStore } from '@/stores/i18n'
 
 const props = defineProps({
@@ -65,7 +39,6 @@ const props = defineProps({
 const embedded = props.embedded
 
 const i18n = useI18nStore()
-const router = useRouter()
 const pageRef = ref(null)
 const networkRef = ref(null)
 // 初始状态就保留中央黑框及其文案，扩散动画只负责打开周边区域。
@@ -73,34 +46,21 @@ const centerVisible = ref(true)
 const expansionStarted = ref(false)
 const expansionComplete = ref(false)
 const expansionGateActive = ref(false)
-const branchesVisible = ref(false)
-const branchesRetreated = ref(false)
-const branchRetreatActive = ref(false)
+const handoffActive = ref(false)
 const t = (key, vars) => i18n.t(key, vars)
-const topicIds = ['data-governance', 'model-engineering', 'agent-development', 'platform-build']
 const EXPANSION_DELAY_MS = 120
 const EXPANSION_FALLBACK_MS = 1380
-const BRANCH_RETREAT_MS = 760
 const EXPANSION_TRIGGER_VIEWPORT_RATIO = 0.58
-const RETREAT_TRIGGER_VIEWPORT_RATIO = 0.3
+const HANDOFF_DURATION_MS = 960
+const HANDOFF_SETTLE_MS = 620
 const PINNED_BREAKPOINT = 901
-
-const topics = computed(() => topicIds.map((id, index) => ({
-  id,
-  index: String(index + 1).padStart(2, '0'),
-  title: t(`technologyPage.topics.${id}.title`),
-  summary: t(`technologyPage.topics.${id}.summary`),
-  points: [1, 2, 3, 4].map((point) => t(`technologyPage.topics.${id}.point${point}`)),
-})))
-
-const branchesInteractive = computed(() => (
-  branchesVisible.value && !branchesRetreated.value
-))
 
 let entryFrame = null
 let expansionTimer = null
 let completionTimer = null
-let branchRetreatTimer = null
+let handoffFrame = null
+let handoffReleaseTimer = null
+let handoffInProgress = false
 let hasAnimated = false
 let inputListenersAttached = false
 let interactionZoneActive = false
@@ -125,10 +85,6 @@ function clearNetworkTimers() {
   if (completionTimer !== null) {
     window.clearTimeout(completionTimer)
     completionTimer = null
-  }
-  if (branchRetreatTimer !== null) {
-    window.clearTimeout(branchRetreatTimer)
-    branchRetreatTimer = null
   }
 }
 
@@ -157,7 +113,7 @@ function syncInputCapture() {
   const shouldCapture = usesPinnedExperience() && (
     interactionZoneActive
     || expansionGateActive.value
-    || branchRetreatActive.value
+    || handoffInProgress
   )
   setInputCapture(shouldCapture)
 }
@@ -174,39 +130,7 @@ function finishNetworkExpansion() {
     completionTimer = null
   }
   expansionComplete.value = true
-  branchesVisible.value = true
   setExpansionGate(false)
-}
-
-function finishBranchRetreat() {
-  branchRetreatTimer = null
-  branchRetreatActive.value = false
-  syncInputCapture()
-}
-
-function startBranchRetreat() {
-  if (
-    !usesPinnedExperience()
-    || !interactionZoneActive
-    || !expansionComplete.value
-    || branchesRetreated.value
-    || branchRetreatActive.value
-  ) return
-
-  branchesRetreated.value = true
-  branchRetreatActive.value = true
-  syncInputCapture()
-  branchRetreatTimer = window.setTimeout(finishBranchRetreat, BRANCH_RETREAT_MS)
-}
-
-function revealBranches() {
-  if (branchRetreatTimer !== null) {
-    window.clearTimeout(branchRetreatTimer)
-    branchRetreatTimer = null
-  }
-  branchRetreatActive.value = false
-  branchesRetreated.value = false
-  syncInputCapture()
 }
 
 function resetNetworkAnimation() {
@@ -217,9 +141,16 @@ function resetNetworkAnimation() {
   centerVisible.value = true
   expansionStarted.value = false
   expansionComplete.value = false
-  branchesVisible.value = false
-  branchesRetreated.value = false
-  branchRetreatActive.value = false
+  handoffActive.value = false
+  handoffInProgress = false
+  if (handoffFrame !== null) {
+    window.cancelAnimationFrame(handoffFrame)
+    handoffFrame = null
+  }
+  if (handoffReleaseTimer !== null) {
+    window.clearTimeout(handoffReleaseTimer)
+    handoffReleaseTimer = null
+  }
   setExpansionGate(false)
 }
 
@@ -228,8 +159,6 @@ function startNetworkAnimation() {
   hasAnimated = true
   centerVisible.value = true
   expansionComplete.value = false
-  branchesRetreated.value = false
-  branchRetreatActive.value = false
   // 扩散提前开始；只有真正进入整屏停驻位置且动画尚未完成时才锁住下滑。
   setExpansionGate(false)
 
@@ -239,7 +168,6 @@ function startNetworkAnimation() {
   if (prefersReducedMotion() || compactViewport) {
     expansionStarted.value = true
     expansionComplete.value = true
-    branchesVisible.value = true
     setExpansionGate(false)
     return
   }
@@ -281,7 +209,29 @@ function checkNetworkEntry() {
   const scrollDelta = currentScrollY - lastScrollY
   lastScrollY = currentScrollY
 
-  if (embedded && currentScrollY <= 8) {
+  const rect = pageRef.value.getBoundingClientRect()
+  const viewportHeight = window.innerHeight || 1
+  const returnedToPreviousSection = scrollDelta < -1 && rect.top > 1
+  const themeSwitchLine = document.querySelector('.nav')?.getBoundingClientRect().height
+    || (window.innerWidth <= 900 ? 68 : 80)
+
+  if (embedded) {
+    document.body.classList.toggle(
+      'technology-theme-active',
+      rect.top <= themeSwitchLine && rect.bottom > 0,
+    )
+  }
+
+  if (
+    handoffActive.value
+    && !handoffInProgress
+    && scrollDelta < -1
+    && rect.bottom > 0
+  ) {
+    handoffActive.value = false
+  }
+
+  if (embedded && (currentScrollY <= 8 || returnedToPreviousSection)) {
     if (hasAnimated) resetNetworkAnimation()
     else {
       interactionZoneActive = false
@@ -293,32 +243,10 @@ function checkNetworkEntry() {
   const pinnedExperience = usesPinnedExperience()
   if (!pinnedExperience) {
     interactionZoneActive = false
-    if (branchesRetreated.value || branchRetreatActive.value) revealBranches()
     if (expansionGateActive.value) finishNetworkExpansion()
   }
 
-  const rect = pageRef.value.getBoundingClientRect()
-  const viewportHeight = window.innerHeight || 1
-  const pinnedDistance = Math.max(0, -rect.top)
-  const retreatTriggerDistance = viewportHeight * RETREAT_TRIGGER_VIEWPORT_RATIO
   updateInteractionZone(rect, viewportHeight)
-
-  if (
-    branchesRetreated.value
-    && scrollDelta < -1
-    && rect.top < viewportHeight * 0.4
-    && rect.bottom > viewportHeight * 0.6
-  ) revealBranches()
-
-  // 先在停驻区内向下移动约三成屏高，再用方向信号启动一次定时退场。
-  if (
-    scrollDelta > 1
-    && interactionZoneActive
-    && pinnedDistance >= retreatTriggerDistance
-    && expansionComplete.value
-    && !branchesRetreated.value
-    && !branchRetreatActive.value
-  ) startBranchRetreat()
 
   if (hasAnimated) return
   if (!embedded) {
@@ -340,59 +268,83 @@ function requestEntryCheck() {
   })
 }
 
-function selectTopic(topic) {
-  router.push({ name: 'technology-topic', params: { topicId: topic.id } })
-}
-
 function preventForwardInput(event) {
   if (event.cancelable) event.preventDefault()
 }
 
-function handleForwardIntent(event, forwardDistance) {
-  if (expansionGateActive.value || branchRetreatActive.value) {
+function startHandoff() {
+  if (
+    handoffActive.value
+    || handoffInProgress
+    || !pageRef.value
+  ) return
+
+  const nextSection = pageRef.value.nextElementSibling
+  if (!(nextSection instanceof HTMLElement)) return
+
+  handoffActive.value = true
+  handoffInProgress = true
+  if (handoffReleaseTimer !== null) {
+    window.clearTimeout(handoffReleaseTimer)
+    handoffReleaseTimer = null
+  }
+  syncInputCapture()
+
+  const startY = window.scrollY
+  const targetY = startY + nextSection.getBoundingClientRect().top
+  const distance = targetY - startY
+  let startTime = null
+
+  const animateHandoff = (timestamp) => {
+    if (startTime === null) startTime = timestamp
+    const progress = Math.min(1, (timestamp - startTime) / HANDOFF_DURATION_MS)
+    const easedProgress = progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 3) / 2
+
+    window.scrollTo(0, startY + distance * easedProgress)
+
+    if (progress < 1) {
+      handoffFrame = window.requestAnimationFrame(animateHandoff)
+      return
+    }
+
+    handoffFrame = null
+    window.scrollTo(0, targetY)
+    handoffReleaseTimer = window.setTimeout(() => {
+      handoffReleaseTimer = null
+      handoffInProgress = false
+      syncInputCapture()
+    }, HANDOFF_SETTLE_MS)
+  }
+
+  handoffFrame = window.requestAnimationFrame(animateHandoff)
+}
+
+function handleForwardIntent(event) {
+  if (expansionGateActive.value || handoffInProgress) {
     preventForwardInput(event)
     return true
   }
 
   if (
-    !interactionZoneActive
-    || !expansionComplete.value
-    || branchesRetreated.value
-  ) return false
-
-  const page = pageRef.value
-  if (!page) return false
-
-  const viewportHeight = window.innerHeight || 1
-  const rect = page.getBoundingClientRect()
-  const stillPinned = rect.top <= 1 && rect.bottom >= viewportHeight - 1
-  if (!stillPinned) return false
-
-  const pinnedDistance = Math.max(0, -rect.top)
-  const retreatTriggerDistance = viewportHeight * RETREAT_TRIGGER_VIEWPORT_RATIO
-  const remainingDistance = Math.max(0, retreatTriggerDistance - pinnedDistance)
-  if (forwardDistance < remainingDistance) return false
-
-  preventForwardInput(event)
-  if (remainingDistance > 1) {
-    window.scrollTo({
-      top: window.scrollY + remainingDistance,
-      behavior: 'instant',
-    })
+    usesPinnedExperience()
+    && interactionZoneActive
+    && expansionComplete.value
+    && !handoffActive.value
+  ) {
+    preventForwardInput(event)
+    startHandoff()
+    return true
   }
-  startBranchRetreat()
-  return true
+
+  return false
 }
 
 function handleWheelSignal(event) {
   if (event.deltaY <= 0 || event.ctrlKey) return
 
-  const deltaScale = event.deltaMode === 1
-    ? 16
-    : event.deltaMode === 2
-      ? window.innerHeight
-      : 1
-  handleForwardIntent(event, event.deltaY * deltaScale)
+  handleForwardIntent(event)
 }
 
 function handleKeySignal(event) {
@@ -407,12 +359,7 @@ function handleKeySignal(event) {
   if (!isForwardKey) return
   if (isForwardSpace && target instanceof HTMLButtonElement) return
 
-  const forwardDistance = event.key === 'ArrowDown'
-    ? 48
-    : event.key === 'End'
-      ? Number.POSITIVE_INFINITY
-      : window.innerHeight * 0.9
-  handleForwardIntent(event, forwardDistance)
+  handleForwardIntent(event)
 }
 
 function handleTouchStart(event) {
@@ -422,7 +369,7 @@ function handleTouchStart(event) {
 }
 
 function handleTouchMove(event) {
-  if (expansionGateActive.value || branchRetreatActive.value) {
+  if (expansionGateActive.value) {
     preventForwardInput(event)
     return
   }
@@ -440,7 +387,7 @@ function handleTouchMove(event) {
 
   const forwardDistance = lastTouchY - currentTouchY
   lastTouchY = currentTouchY
-  if (forwardDistance > 0) handleForwardIntent(event, forwardDistance)
+  if (forwardDistance > 0) handleForwardIntent(event)
 }
 
 function handleTouchEnd(event) {
@@ -460,11 +407,14 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', requestEntryCheck)
   window.removeEventListener('resize', requestEntryCheck)
   if (entryFrame !== null) window.cancelAnimationFrame(entryFrame)
+  if (handoffFrame !== null) window.cancelAnimationFrame(handoffFrame)
+  if (handoffReleaseTimer !== null) window.clearTimeout(handoffReleaseTimer)
   clearNetworkTimers()
   expansionGateActive.value = false
-  branchRetreatActive.value = false
+  handoffInProgress = false
   interactionZoneActive = false
   setInputCapture(false)
+  document.body.classList.remove('technology-theme-active')
 })
 </script>
 
@@ -560,17 +510,26 @@ onBeforeUnmount(() => {
   z-index: 2;
   width: min(46vw, 740px);
   text-align: center;
-  transform: translate(-50%, -50%);
   opacity: 0;
   filter: blur(7px);
   transition: opacity 0.75s ease, filter 0.75s ease, transform 0.75s ease;
   transform: translate(-50%, calc(-50% + 18px));
+  transform-origin: center;
+  will-change: transform, opacity, filter;
 }
 
 .network--center-visible .network-copy {
   opacity: 1;
   filter: blur(0);
   transform: translate(-50%, -50%);
+}
+
+.network--handoff-active .network-copy,
+.network--center-visible.network--handoff-active .network-copy {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translate(-50%, calc(-50% - 58px)) scale(0.955);
+  transition-duration: 0.82s;
 }
 
 h1 {
@@ -946,6 +905,128 @@ h1 {
   .technology-page--embedded .network {
     min-height: 0;
     height: auto;
+  }
+}
+</style>
+
+<style>
+.nav,
+.nav.scrolled {
+  transition:
+    background-color 0.28s ease,
+    box-shadow 0.28s ease,
+    backdrop-filter 0.28s ease;
+}
+
+.nav .logo {
+  transition:
+    filter 0.32s ease,
+    transform 0.3s ease;
+}
+
+.nav .menu-link,
+.nav .mobile-language-toggle,
+.nav .btn-12,
+.nav .wave-group .input,
+.nav .wave-group .label,
+.nav .wave-group .bar::before,
+.nav .wave-group .bar::after,
+.nav .login-icon,
+.nav .login-icon img,
+.nav .user-avatar,
+.nav .menu-toggle span {
+  transition-duration: 0.32s;
+  transition-timing-function: ease;
+}
+
+body.technology-theme-active .nav,
+body.technology-theme-active .nav.scrolled {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+body.technology-theme-active .nav .logo {
+  filter: invert(1) grayscale(1) brightness(1.8);
+}
+
+body.technology-theme-active .nav .menu-link,
+body.technology-theme-active .nav .mobile-language-toggle {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+body.technology-theme-active .nav .btn-12 {
+  background-color: #ffffff;
+  color: #050505;
+}
+
+body.technology-theme-active .nav .wave-group .input {
+  color: #ffffff;
+  border-bottom-color: rgba(255, 255, 255, 0.72);
+}
+
+body.technology-theme-active .nav .wave-group .label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.technology-theme-active .nav .wave-group .bar::before,
+body.technology-theme-active .nav .wave-group .bar::after {
+  background: #ffffff;
+}
+
+body.technology-theme-active .nav .login-icon {
+  border-color: rgba(255, 255, 255, 0.88);
+}
+
+body.technology-theme-active .nav .login-icon:not(.login-icon--has-photo) img {
+  filter: invert(1);
+}
+
+body.technology-theme-active .nav .user-avatar {
+  color: #ffffff;
+}
+
+body.technology-theme-active .nav .menu-toggle span {
+  background: #ffffff;
+}
+
+@media (max-width: 900px) {
+  body.technology-theme-active .nav,
+  body.technology-theme-active .nav.scrolled {
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  body.technology-theme-active .nav:has(.menu--open),
+  body.technology-theme-active .nav.scrolled:has(.menu--open) {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+  }
+
+  body.technology-theme-active .nav:has(.menu--open) .logo {
+    filter: none;
+  }
+
+  body.technology-theme-active .nav:has(.menu--open) .mobile-language-toggle {
+    color: rgba(17, 24, 39, 0.68);
+  }
+
+  body.technology-theme-active .nav:has(.menu--open) .login-icon {
+    border-color: #111827;
+  }
+
+  body.technology-theme-active .nav:has(.menu--open) .menu-toggle span {
+    background: #111827;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav,
+  .nav *,
+  .nav *::before,
+  .nav *::after {
+    transition-duration: 0.01ms !important;
   }
 }
 </style>
