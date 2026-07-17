@@ -204,6 +204,13 @@ const MESSAGES = {
         'Local AI hardware and Nemo AIOS bring intelligence into the healthcare environment as one integrated system.',
       ariaLabel: 'Nemo One medical AI system showcase',
     },
+    aiosShowcase: {
+      eyebrow: 'AIOS · AI Application Operating System',
+      titleLine1: 'AIOS for every business,',
+      titleLine2: 'with its own AI application',
+      descriptionLine1: 'Connect models, data, knowledge, and business workflows,',
+      descriptionLine2: 'creating a new paradigm for enterprise intelligent applications.',
+    },
     companyTransition: {
       title: 'AI, where it matters.',
     },
@@ -586,12 +593,19 @@ const MESSAGES = {
     nemoOne: {
       eyebrow: 'NEMO ONE / MEDICAL EDGE',
       titleLine1: '医疗 AI，',
-      titleLine2: '运行在医疗现场。',
+      titleLine2: '运行在医疗现场',
       description: '本地 AI 硬件与 Nemo AIOS，软硬一体进入医疗现场。',
       ariaLabel: 'Nemo One 医疗 AI 一体机展示',
     },
+    aiosShowcase: {
+      eyebrow: 'AIOS · AI Application Operating System',
+      titleLine1: 'AIOS，让每一个业务，',
+      titleLine2: '都拥有自己的 AI 应用',
+      descriptionLine1: '连接模型、数据、知识与业务流程，',
+      descriptionLine2: '构建企业级智能应用新范式。',
+    },
     companyTransition: {
-      title: '让 AI，真正进入现场。',
+      title: '让 AI，真正进入现场',
     },
     cta: {
       preheadline: '让 AI + 产业真正落地',

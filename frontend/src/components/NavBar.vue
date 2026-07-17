@@ -316,8 +316,8 @@ onBeforeUnmount(() => {
 }
 
 .nav.scrolled {
-  background: #ffffff;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  background: transparent;
+  box-shadow: none;
 }
 
 /* 左侧 logo */
@@ -724,9 +724,9 @@ onBeforeUnmount(() => {
     height: 68px;
     padding: 0 16px;
     grid-template-columns: 1fr auto;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
-    backdrop-filter: blur(14px);
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .logo-wrapper {
