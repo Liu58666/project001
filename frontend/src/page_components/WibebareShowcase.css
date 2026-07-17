@@ -1,11 +1,8 @@
 .home-hero {
   position: relative;
   z-index: 3;
-  /* The scroll track now only covers page 1 -> page 2; page 2 is the bottom of the
-     page. The page 2 -> page 3 swap happens in place (no scrolling), driven by JS, so
-     the track no longer reserves height for it. The remaining height is tuned so the
-     page-1 -> page-2 scroll distance matches the previous design. */
-  min-height: 308svh;
+  /* 缩短滚动轨道，让同样一次滚轮输入推进更多动画进度。 */
+  min-height: 150svh;
   padding: 0 1.5rem;
   --fg: #171717;
   --muted: #707070;

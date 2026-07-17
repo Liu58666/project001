@@ -625,26 +625,112 @@ onBeforeUnmount(() => {
   overflow: hidden;
   padding: 0.6rem 1.4rem;
   position: relative;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  isolation: isolate;
+  touch-action: manipulation;
+  transform: translateZ(0);
+  transition:
+    background-color 0.28s ease,
+    color 0.28s ease,
+    box-shadow 0.32s ease,
+    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-12 span {
+  display: inline-block;
   position: relative;
   z-index: 1;
   mix-blend-mode: normal;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-12:before,
 .btn-12:after {
-  content: none;
-  display: none;
+  content: '';
+  display: block;
+  position: absolute;
+  pointer-events: none;
 }
 
-.btn-12:hover {
-  border: 0;
-  background-color: #ffffff;
-  color: #000000;
-  box-shadow: none;
+.btn-12:before {
+  z-index: 0;
+  top: -55%;
+  bottom: -55%;
+  left: -42%;
+  width: 32%;
+  background: linear-gradient(
+    105deg,
+    transparent,
+    color-mix(in srgb, currentColor 22%, transparent),
+    transparent
+  );
+  opacity: 0;
+  transform: translate3d(-170%, 0, 0) skewX(-18deg);
+}
+
+.btn-12:after {
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0.78);
+  transition:
+    opacity 0.16s ease,
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-12:hover {
+    border: 0;
+    background-color: #ffffff;
+    color: #000000;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+    transform: translateY(-2px);
+  }
+
+  .btn-12:hover span {
+    transform: translateY(-0.5px);
+  }
+
+  .btn-12:hover:before {
+    animation: contact-button-sheen 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+.btn-12:active {
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
+  transform: translateY(0) scale(0.95);
+  transition-duration: 0.1s;
+}
+
+.btn-12:active span {
+  transform: scale(0.98);
+}
+
+.btn-12:active:after {
+  opacity: 0.12;
+  transform: scale(1);
+}
+
+.btn-12:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+@keyframes contact-button-sheen {
+  0% {
+    opacity: 0;
+    transform: translate3d(-170%, 0, 0) skewX(-18deg);
+  }
+
+  22% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(520%, 0, 0) skewX(-18deg);
+  }
 }
 
 /* ============ Search 输入框（改成 Search） ============ */
@@ -857,6 +943,44 @@ onBeforeUnmount(() => {
     color: #ffffff;
     font-weight: 700;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mobile-contact::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.82);
+    transition:
+      opacity 0.14s ease,
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mobile-contact:active {
+    background: #1f2937;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
+    transform: scale(0.97);
+  }
+
+  .mobile-contact:active::after {
+    opacity: 0.12;
+    transform: scale(1);
+  }
+
+  .mobile-contact:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 3px;
   }
 
   .nav-actions {
@@ -945,8 +1069,17 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .menu,
   .dropdown,
-  .menu-toggle span {
+  .menu-toggle span,
+  .btn-12,
+  .btn-12 span,
+  .btn-12:after,
+  .mobile-contact,
+  .mobile-contact::after {
     transition: none;
+  }
+
+  .btn-12:hover:before {
+    animation: none;
   }
 }
 </style>

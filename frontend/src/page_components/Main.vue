@@ -39,31 +39,23 @@
           <div class="hero-card">
           <div class="device-shot">
               <div class="device-screen">
-              <Transition name="fade" mode="out-in">
                 <img
-                  :key="heroImages[activeIndex].src"
-                  :src="heroImages[activeIndex].src"
+                  v-for="(image, index) in heroImages"
+                  :key="image.src"
+                  :src="image.src"
                   class="device-img"
+                  :class="[
+                    image.className,
+                    { 'device-img--active': activeIndex === index }
+                  ]"
                   :style="{
-                    ...heroImages[activeIndex].imgStyle,
-                    objectPosition: heroImages[activeIndex].imgStyle.objectPosition || 'center center'
+                    ...image.imgStyle,
+                    objectPosition: image.imgStyle.objectPosition || 'center center'
                   }"
                   :alt="t('hero.deviceAlt')"
                 />
-              </Transition>
             </div>
           </div>
-          <Transition name="badge-fade" mode="out-in">
-            <div 
-              :key="activeIndex"
-              class="apollo-badge" 
-              :class="heroImages[activeIndex].badgeInfo.position === 'left' ? 'pos-left' : 'pos-right'"
-            >
-              <span class="badge-text">
-                {{ t(heroImages[activeIndex].badgeInfoKey) }}
-              </span>
-            </div>
-          </Transition>
           </div>
   
           <div class="hero-features fade-in-up" :class="{ 'animate': isMounted }">
@@ -129,9 +121,9 @@
   import { useRouter } from 'vue-router'
   import { useI18nStore } from '@/stores/i18n'
   import newscard from '@/components/newscard.vue'
-  import hero1 from '@/assets/images/hero-1.png'
-  import hero2 from '@/assets/images/hero-2.png'
-  import hero3 from '@/assets/images/hero-3.png'
+  import nemoShow from '@/assets/images/prod/nemo-show.png'
+  import aiosShow from '@/assets/images/prod/AIOS_show.png'
+  import vibebaraShow from '@/assets/images/prod/vibebara_show.png'
 
  // 背景视频（应用到整个 hero 区域）
  import bgVideo from '@/assets/images/section4.webm'
@@ -142,40 +134,39 @@ const router = useRouter()
 
 const heroImages = [
   {
-    src: hero1,
+    src: nemoShow,
+    className: 'device-img--nemo',
     imgStyle: {
-      width: '75%',
-      height: 'auto',
-      top: '100%',
-      left: '50%',
-      transform: 'translate(-52%, -50%)'
+      width: '90%',
+      height: '90%',
+      right: '0',
+      bottom: '0',
+      objectPosition: 'right bottom'
     },
-    badgeInfoKey: 'hero.badge1',
-    badgeInfo: { position: 'right' },
   },
   {
-    src: hero2,
+    src: aiosShow,
+    className: 'device-img--aios',
+    imgStyle: {
+      width: '80%',
+      height: 'calc(84% - 20px)',
+      bottom: '0',
+      left: '50%',
+      transform: 'translateX(-50%) scale(1.1)',
+      transformOrigin: 'center bottom',
+      objectFit: 'contain',
+      objectPosition: 'center bottom'
+    },
+  },
+  {
+    src: vibebaraShow,
     imgStyle: {
       width: '90%',
       height: '90%',
       bottom: '0',
-      left: '0',
+      right: '0',
       objectPosition: 'left top'
     },
-    badgeInfoKey: 'hero.badge2',
-    badgeInfo: { position: 'right' },
-  },
-  {
-    src: hero3,
-    imgStyle: {
-      width: '90%',
-      height: '90%',
-      bottom: '0%',
-      right: '0%',
-      objectPosition: 'left top'
-    },
-    badgeInfoKey: 'hero.badge3',
-    badgeInfo: { position: 'left' },
   },
 ]
 
@@ -497,7 +488,11 @@ let timer = null
     position: relative;
     width: 100%;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  box-shadow: 0 18px 48px rgba(80, 70, 105, 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+  backdrop-filter: blur(18px) saturate(1.12);
   padding: 0 0 0 0px;
 }
 
@@ -529,82 +524,18 @@ let timer = null
   will-change: opacity, transform;
   width: 100%;
   height: 100%;
-}
-
-/* 动画相关 */
-.fade-enter-active,
-.fade-leave-active {
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 14px;
   transition: opacity 0.6s ease;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.device-img--active {
+  opacity: 1;
 }
 
-/* 保留绝对定位和层级即可，不去动 top/left/width/height */
-.fade-leave-active {
-  position: absolute;
-  pointer-events: none;
-  width: 100%;
-  height: 100%;
-}
-
-
-/* Badge 浮现动画 */
-.badge-fade-enter-active {
-  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.badge-fade-leave-active {
-  transition: all 0.3s ease-in;
-}
-
-.badge-fade-enter-from {
-  opacity: 0;
-  transform: scale(0.8) translateY(-10px);
-}
-
-.badge-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
-
-/* Badge 基础样式 */
-  .apollo-badge {
-    position: absolute;
-    top: 40px;
-    width: 104px;
-    height: 104px;
-    border-radius: 26px;
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid transparent;
-    box-shadow: 0 12px 22px rgba(15, 23, 42, 0.18);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
-    font-size: 14px;
-    font-weight: 600;
-    color: #111827;
-    text-align: center;
-    line-height: 1.2;
-    padding: 10px;
-}
-
-/* 位置 1 - 右上角 (保持原样) */
-.pos-right {
-  right: 40px;
-  left: auto;
-  top: 20px;
-}
-
-/* 位置 2 - 左上角 */
-.pos-left {
-  right: auto;
-  left: 40px;
-  top: 20px;
+.device-img--aios {
+  background: #ffffff;
 }
 
 /* 特性条 (保持不变) */
@@ -747,21 +678,19 @@ let timer = null
     object-position: left top !important;
   }
 
-  .apollo-badge {
-    width: 88px;
-    height: 88px;
-    border-radius: 22px;
-    font-size: 12px;
+  .device-img.device-img--nemo {
+    object-position: right bottom !important;
   }
 
-  .pos-right {
-    right: 14px;
-    top: 14px;
-  }
-
-  .pos-left {
-    left: 14px;
-    top: 14px;
+  .device-img.device-img--aios {
+    inset: auto !important;
+    left: 50% !important;
+    bottom: 0 !important;
+    width: 78% !important;
+    height: calc(84% - 12px) !important;
+    object-fit: contain !important;
+    object-position: center bottom !important;
+    transform: translateX(-50%) scale(1.1) !important;
   }
 
   .hero-features {

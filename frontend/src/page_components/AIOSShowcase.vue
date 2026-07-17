@@ -60,9 +60,14 @@ let lastFrameTime = 0
 let renderedProgress = 0
 let targetProgress = 0
 let sceneInitialized = false
+let fixedTransitionFrame = 0
+let fixedTransitionRunning = false
+let fixedTransitionComplete = false
+let lastTouchY = null
 
 const SCRUB_RESPONSE_MS = 105
 const PROGRESS_EPSILON = 0.00035
+const HANDOFF_DURATION_MS = 1200
 
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value))
 const range = (value, start, end) => clamp((value - start) / (end - start))
@@ -128,6 +133,10 @@ const updateSceneTarget = (immediate = false) => {
   if (!section) return
 
   if (window.matchMedia('(max-width: 900px)').matches) {
+    if (fixedTransitionFrame) window.cancelAnimationFrame(fixedTransitionFrame)
+    fixedTransitionFrame = 0
+    fixedTransitionRunning = false
+    fixedTransitionComplete = false
     if (animationFrame) window.cancelAnimationFrame(animationFrame)
     animationFrame = 0
     lastFrameTime = 0
@@ -144,10 +153,13 @@ const updateSceneTarget = (immediate = false) => {
     return
   }
 
+  if (fixedTransitionRunning) return
+
   const bounds = section.getBoundingClientRect()
   const stageHeight = stageRef.value?.offsetHeight || window.innerHeight
   const scrollDistance = Math.max(1, section.offsetHeight - stageHeight)
   targetProgress = clamp(-bounds.top / scrollDistance)
+  if (targetProgress <= 0.015) fixedTransitionComplete = false
 
   if (!sceneInitialized || immediate) {
     sceneInitialized = true
@@ -163,8 +175,146 @@ const updateSceneTarget = (immediate = false) => {
 }
 
 const requestSceneUpdate = () => {
+  if (fixedTransitionRunning) return
   if (targetFrame) return
   targetFrame = window.requestAnimationFrame(() => updateSceneTarget())
+}
+
+const preventForwardInput = (event) => {
+  if (event.cancelable) event.preventDefault()
+}
+
+const isFixedTransitionZoneActive = () => {
+  const section = sectionRef.value
+  if (!section || window.matchMedia('(max-width: 900px)').matches) return false
+
+  const bounds = section.getBoundingClientRect()
+  const navHeight = document.querySelector('.nav')?.getBoundingClientRect().height || 80
+  const viewportHeight = window.innerHeight || 1
+  const terminalY = section.offsetTop + Math.max(0, section.offsetHeight - viewportHeight)
+
+  return (
+    bounds.top <= navHeight + 2
+    && bounds.bottom >= viewportHeight - 2
+    && window.scrollY <= terminalY + 2
+  )
+}
+
+const startFixedTransition = () => {
+  if (
+    fixedTransitionRunning
+    || fixedTransitionComplete
+    || window.matchMedia('(max-width: 900px)').matches
+    || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) return
+
+  const section = sectionRef.value
+  const stage = stageRef.value
+  if (!section || !stage) return
+
+  if (animationFrame) window.cancelAnimationFrame(animationFrame)
+  if (targetFrame) window.cancelAnimationFrame(targetFrame)
+  animationFrame = 0
+  targetFrame = 0
+  lastFrameTime = 0
+
+  const startY = section.offsetTop
+  const scrollDistance = Math.max(1, section.offsetHeight - stage.offsetHeight)
+  const endY = startY + scrollDistance
+  const startedAt = performance.now()
+
+  fixedTransitionRunning = true
+  sceneInitialized = true
+  targetProgress = 0
+  renderedProgress = 0
+  window.scrollTo({ top: startY, left: 0, behavior: 'instant' })
+  renderScene(0)
+
+  const step = (timestamp) => {
+    const elapsed = timestamp - startedAt
+    const linearProgress = clamp(elapsed / HANDOFF_DURATION_MS)
+    const easedProgress = smooth(linearProgress)
+
+    targetProgress = easedProgress
+    renderedProgress = easedProgress
+    window.scrollTo({
+      top: startY + scrollDistance * easedProgress,
+      left: 0,
+      behavior: 'instant',
+    })
+    renderScene(easedProgress)
+
+    if (linearProgress < 1) {
+      fixedTransitionFrame = window.requestAnimationFrame(step)
+      return
+    }
+
+    fixedTransitionFrame = 0
+    fixedTransitionRunning = false
+    fixedTransitionComplete = true
+    targetProgress = 1
+    renderedProgress = 1
+    window.scrollTo({ top: endY, left: 0, behavior: 'instant' })
+    renderScene(1)
+  }
+
+  fixedTransitionFrame = window.requestAnimationFrame(step)
+}
+
+const handleForwardIntent = (event) => {
+  if (
+    window.matchMedia('(max-width: 900px)').matches
+    || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) return
+
+  if (fixedTransitionRunning) {
+    preventForwardInput(event)
+    return
+  }
+
+  if (!fixedTransitionComplete && isFixedTransitionZoneActive()) {
+    preventForwardInput(event)
+    startFixedTransition()
+  }
+}
+
+const handleWheel = (event) => {
+  if (event.deltaY <= 0 || event.ctrlKey) return
+  handleForwardIntent(event)
+}
+
+const handleKeyDown = (event) => {
+  const target = event.target
+  if (
+    target instanceof HTMLElement
+    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+  ) return
+
+  const isForwardSpace = event.key === ' ' && !event.shiftKey
+  if (!isForwardSpace && !['ArrowDown', 'PageDown', 'End'].includes(event.key)) return
+  if (isForwardSpace && target instanceof HTMLButtonElement) return
+  handleForwardIntent(event)
+}
+
+const handleTouchStart = (event) => {
+  lastTouchY = event.touches.length === 1 ? event.touches[0].clientY : null
+}
+
+const handleTouchMove = (event) => {
+  if (event.touches.length !== 1) {
+    lastTouchY = null
+    return
+  }
+
+  const currentTouchY = event.touches[0].clientY
+  if (lastTouchY !== null && lastTouchY - currentTouchY > 0) {
+    handleForwardIntent(event)
+  }
+  lastTouchY = currentTouchY
+}
+
+const handleTouchEnd = () => {
+  lastTouchY = null
 }
 
 onMounted(async () => {
@@ -185,14 +335,27 @@ onMounted(async () => {
   updateSceneTarget(true)
   window.addEventListener('scroll', requestSceneUpdate, { passive: true })
   window.addEventListener('resize', requestSceneUpdate, { passive: true })
+  window.addEventListener('wheel', handleWheel, { passive: false })
+  window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('touchstart', handleTouchStart, { passive: true })
+  window.addEventListener('touchmove', handleTouchMove, { passive: false })
+  window.addEventListener('touchend', handleTouchEnd, { passive: true })
+  window.addEventListener('touchcancel', handleTouchEnd, { passive: true })
 })
 
 onBeforeUnmount(() => {
   observer?.disconnect()
   window.removeEventListener('scroll', requestSceneUpdate)
   window.removeEventListener('resize', requestSceneUpdate)
+  window.removeEventListener('wheel', handleWheel)
+  window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('touchstart', handleTouchStart)
+  window.removeEventListener('touchmove', handleTouchMove)
+  window.removeEventListener('touchend', handleTouchEnd)
+  window.removeEventListener('touchcancel', handleTouchEnd)
   if (animationFrame) window.cancelAnimationFrame(animationFrame)
   if (targetFrame) window.cancelAnimationFrame(targetFrame)
+  if (fixedTransitionFrame) window.cancelAnimationFrame(fixedTransitionFrame)
   document.body.classList.remove('aios-showcase-active')
 })
 </script>
