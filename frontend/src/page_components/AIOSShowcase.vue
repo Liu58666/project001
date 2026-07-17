@@ -7,37 +7,42 @@
     :lang="i18n.locale"
     aria-labelledby="aios-showcase-title"
   >
-    <div class="aios-inner">
-      <div class="aios-copy">
-        <p class="aios-eyebrow">{{ t('aiosShowcase.eyebrow') }}</p>
-        <h2 id="aios-showcase-title" class="aios-title">
-          <span>{{ t('aiosShowcase.titleLine1') }}</span>
-          <span>{{ t('aiosShowcase.titleLine2') }}</span>
-        </h2>
-        <p class="aios-description">
-          <span>{{ t('aiosShowcase.descriptionLine1') }}</span>
-          <span>{{ t('aiosShowcase.descriptionLine2') }}</span>
-        </p>
+    <div ref="stageRef" class="aios-stage">
+      <div class="aios-inner">
+        <div class="aios-copy">
+          <p class="aios-eyebrow">{{ t('aiosShowcase.eyebrow') }}</p>
+          <h2 id="aios-showcase-title" class="aios-title">
+            <span>{{ t('aiosShowcase.titleLine1') }}</span>
+            <span>{{ t('aiosShowcase.titleLine2') }}</span>
+          </h2>
+          <p class="aios-description">
+            <span>{{ t('aiosShowcase.descriptionLine1') }}</span>
+            <span>{{ t('aiosShowcase.descriptionLine2') }}</span>
+          </p>
+        </div>
+
+        <div class="aios-visual" aria-hidden="true">
+          <div class="aios-floor-light"></div>
+          <div class="aios-contact-shadow"></div>
+          <img
+            :src="aiosImage"
+            alt=""
+            width="1024"
+            height="614"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
       </div>
 
-      <div class="aios-visual" aria-hidden="true">
-        <div class="aios-floor-light"></div>
-        <div class="aios-contact-shadow"></div>
-        <img
-          :src="aiosImage"
-          alt=""
-          width="1024"
-          height="614"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
+      <div class="aios-handoff-wash" aria-hidden="true"></div>
+      <div class="aios-white-fill" aria-hidden="true"></div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18nStore } from '@/stores/i18n'
 import aiosImage from '@/assets/images/prod/AIOS.png'
 
@@ -45,31 +50,124 @@ const i18n = useI18nStore()
 const t = (key) => i18n.t(key)
 
 const sectionRef = ref(null)
+const stageRef = ref(null)
 const isVisible = ref(false)
 
 let observer = null
-let updateFrame = null
+let animationFrame = 0
+let targetFrame = 0
+let lastFrameTime = 0
+let renderedProgress = 0
+let targetProgress = 0
+let sceneInitialized = false
 
-const updateTheme = () => {
-  updateFrame = null
+const SCRUB_RESPONSE_MS = 105
+const PROGRESS_EPSILON = 0.00035
+
+const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value))
+const range = (value, start, end) => clamp((value - start) / (end - start))
+const smooth = (value) => {
+  const normalized = clamp(value)
+  return normalized * normalized * normalized
+    * (normalized * (normalized * 6 - 15) + 10)
+}
+
+const setSceneVariable = (name, value) => {
+  stageRef.value?.style.setProperty(name, value)
+}
+
+const renderScene = (progress) => {
   const section = sectionRef.value
   if (!section) return
 
+  const whiteProgress = smooth(range(progress, 0.04, 0.9))
+  const contentExit = smooth(range(progress, 0.48, 0.78))
+  const whiteFill = smooth(range(progress, 0.86, 0.995))
+  const washY = 42 - whiteProgress * 48
+  const washScaleX = 0.72 + whiteProgress * 0.3
+  const washScaleY = 0.7 + whiteProgress * 0.35
+
+  setSceneVariable('--aios-white-progress', whiteProgress.toFixed(4))
+  setSceneVariable('--aios-content-exit', contentExit.toFixed(4))
+  setSceneVariable('--aios-wash-y', `${washY.toFixed(2)}%`)
+  setSceneVariable('--aios-wash-scale-x', washScaleX.toFixed(4))
+  setSceneVariable('--aios-wash-scale-y', washScaleY.toFixed(4))
+  setSceneVariable('--aios-white-fill', whiteFill.toFixed(4))
+
   const bounds = section.getBoundingClientRect()
-  const navHeight = document.querySelector('.nav')?.getBoundingClientRect().height
-    || (window.innerWidth <= 900 ? 68 : 80)
+  const navHeight = document.querySelector('.nav')?.getBoundingClientRect().height || 80
+  const sectionIsVisible = bounds.top <= navHeight && bounds.bottom > navHeight
   document.body.classList.toggle(
     'aios-showcase-active',
-    bounds.top <= navHeight && bounds.bottom > navHeight,
+    sectionIsVisible && whiteFill < 0.18,
   )
 }
 
-const requestThemeUpdate = () => {
-  if (updateFrame !== null) return
-  updateFrame = window.requestAnimationFrame(updateTheme)
+const animateScene = (timestamp) => {
+  animationFrame = 0
+  const deltaTime = lastFrameTime ? Math.min(48, timestamp - lastFrameTime) : 16
+  lastFrameTime = timestamp
+  const blend = 1 - Math.exp(-deltaTime / SCRUB_RESPONSE_MS)
+  renderedProgress += (targetProgress - renderedProgress) * blend
+
+  if (Math.abs(targetProgress - renderedProgress) <= PROGRESS_EPSILON) {
+    renderedProgress = targetProgress
+  }
+
+  renderScene(renderedProgress)
+  if (renderedProgress !== targetProgress) {
+    animationFrame = window.requestAnimationFrame(animateScene)
+  } else {
+    lastFrameTime = 0
+  }
 }
 
-onMounted(() => {
+const updateSceneTarget = (immediate = false) => {
+  targetFrame = 0
+  const section = sectionRef.value
+  if (!section) return
+
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    if (animationFrame) window.cancelAnimationFrame(animationFrame)
+    animationFrame = 0
+    lastFrameTime = 0
+    sceneInitialized = false
+
+    const bounds = section.getBoundingClientRect()
+    const navHeight = document.querySelector('.nav')?.getBoundingClientRect().height || 68
+    const navProgress = clamp((navHeight - bounds.top) / Math.max(1, bounds.height))
+    const sectionIsVisible = bounds.top <= navHeight && bounds.bottom > navHeight
+    document.body.classList.toggle(
+      'aios-showcase-active',
+      sectionIsVisible && navProgress < 0.72,
+    )
+    return
+  }
+
+  const bounds = section.getBoundingClientRect()
+  const stageHeight = stageRef.value?.offsetHeight || window.innerHeight
+  const scrollDistance = Math.max(1, section.offsetHeight - stageHeight)
+  targetProgress = clamp(-bounds.top / scrollDistance)
+
+  if (!sceneInitialized || immediate) {
+    sceneInitialized = true
+    renderedProgress = targetProgress
+    renderScene(renderedProgress)
+    return
+  }
+
+  if (!animationFrame) {
+    lastFrameTime = 0
+    animationFrame = window.requestAnimationFrame(animateScene)
+  }
+}
+
+const requestSceneUpdate = () => {
+  if (targetFrame) return
+  targetFrame = window.requestAnimationFrame(() => updateSceneTarget())
+}
+
+onMounted(async () => {
   const section = sectionRef.value
   if (!section) return
 
@@ -83,16 +181,18 @@ onMounted(() => {
   )
   observer.observe(section)
 
-  updateTheme()
-  window.addEventListener('scroll', requestThemeUpdate, { passive: true })
-  window.addEventListener('resize', requestThemeUpdate, { passive: true })
+  await nextTick()
+  updateSceneTarget(true)
+  window.addEventListener('scroll', requestSceneUpdate, { passive: true })
+  window.addEventListener('resize', requestSceneUpdate, { passive: true })
 })
 
 onBeforeUnmount(() => {
   observer?.disconnect()
-  window.removeEventListener('scroll', requestThemeUpdate)
-  window.removeEventListener('resize', requestThemeUpdate)
-  if (updateFrame !== null) window.cancelAnimationFrame(updateFrame)
+  window.removeEventListener('scroll', requestSceneUpdate)
+  window.removeEventListener('resize', requestSceneUpdate)
+  if (animationFrame) window.cancelAnimationFrame(animationFrame)
+  if (targetFrame) window.cancelAnimationFrame(targetFrame)
   document.body.classList.remove('aios-showcase-active')
 })
 </script>
@@ -101,14 +201,32 @@ onBeforeUnmount(() => {
 .aios-showcase {
   position: relative;
   z-index: 2;
-  min-height: 100vh;
-  min-height: 100svh;
-  overflow: hidden;
+  height: 150vh;
+  height: 150svh;
   background: #000000;
   color: #ffffff;
 }
 
+.aios-stage {
+  --aios-white-progress: 0;
+  --aios-content-exit: 0;
+  --aios-wash-y: 42%;
+  --aios-wash-scale-x: 0.72;
+  --aios-wash-scale-y: 0.7;
+  --aios-white-fill: 0;
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: #000000;
+  isolation: isolate;
+}
+
 .aios-inner {
+  position: relative;
+  z-index: 3;
   display: grid;
   width: min(100%, 1720px);
   min-height: 100vh;
@@ -119,6 +237,10 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: clamp(28px, 3vw, 58px);
   box-sizing: border-box;
+  opacity: calc(1 - var(--aios-content-exit));
+  filter: blur(calc(var(--aios-content-exit) * 12px));
+  transform: translateY(calc(var(--aios-content-exit) * -3vh));
+  will-change: opacity, filter, transform;
 }
 
 .aios-copy {
@@ -283,6 +405,103 @@ onBeforeUnmount(() => {
   user-select: none;
 }
 
+.aios-handoff-wash {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: -12%;
+  width: 164vw;
+  height: 150vh;
+  background:
+    radial-gradient(
+      ellipse 56% 72% at 47% 84%,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.99) 32%,
+      rgba(231, 247, 250, 0.96) 47%,
+      rgba(147, 219, 230, 0.8) 61%,
+      rgba(56, 151, 170, 0.48) 74%,
+      rgba(9, 51, 61, 0.14) 86%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 31% 54% at 53% 31%,
+      rgba(84, 204, 226, 0.78) 0%,
+      rgba(49, 159, 181, 0.5) 42%,
+      rgba(16, 75, 89, 0.16) 70%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 28% 43% at 31% 56%,
+      rgba(74, 185, 204, 0.34) 0%,
+      rgba(25, 99, 115, 0.16) 54%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 32% 48% at 76% 59%,
+      rgba(92, 192, 208, 0.3) 0%,
+      rgba(22, 89, 103, 0.13) 56%,
+      transparent 100%
+    );
+  filter: blur(34px);
+  opacity: clamp(0, calc(var(--aios-white-progress) * 1.4), 1);
+  transform:
+    translateX(-50%)
+    translateY(var(--aios-wash-y))
+    scaleX(var(--aios-wash-scale-x))
+    scaleY(var(--aios-wash-scale-y));
+  transform-origin: center 78%;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.aios-handoff-wash::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 15%;
+  right: 10%;
+  bottom: -8%;
+  height: 58%;
+  background: radial-gradient(
+    ellipse 68% 100% at 49% 100%,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(255, 255, 255, 0.86) 45%,
+    rgba(228, 246, 249, 0.5) 70%,
+    transparent 100%
+  );
+  filter: blur(42px);
+  transform: translateX(-3%) skewX(-4deg);
+  pointer-events: none;
+}
+
+.aios-handoff-wash::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  left: -8%;
+  right: -12%;
+  bottom: -18%;
+  height: 56%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.76) 34%,
+    #ffffff 72%
+  );
+  filter: blur(36px);
+  transform: rotate(-1.5deg);
+  pointer-events: none;
+}
+
+.aios-white-fill {
+  position: absolute;
+  z-index: 7;
+  inset: -2px;
+  background: #ffffff;
+  opacity: var(--aios-white-fill);
+  pointer-events: none;
+}
+
 @media (min-width: 901px) {
   .aios-showcase:lang(zh) .aios-title {
     font-size: clamp(44px, 4vw, 68px);
@@ -294,12 +513,40 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 900px) {
+  .aios-showcase {
+    --aios-mobile-handoff: linear-gradient(
+      180deg,
+      #000000 0%,
+      #000000 67%,
+      #111212 74%,
+      #404242 82%,
+      #8f9191 88%,
+      #d6d7d7 94%,
+      #ffffff 100%
+    );
+    height: auto;
+    min-height: 136svh;
+    margin-bottom: -1px;
+    background: var(--aios-mobile-handoff);
+  }
+
+  .aios-stage {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 136svh;
+    background: var(--aios-mobile-handoff);
+  }
+
   .aios-inner {
     min-height: 100svh;
     padding: 102px 20px 54px;
     grid-template-columns: minmax(0, 1fr);
     align-content: center;
     gap: 42px;
+    opacity: 1;
+    filter: none;
+    transform: none;
   }
 
   .aios-copy {
@@ -333,6 +580,11 @@ onBeforeUnmount(() => {
     margin-right: -24vw;
     justify-self: end;
     transform: translate3d(48px, 34px, 0) scale(0.96);
+  }
+
+  .aios-handoff-wash,
+  .aios-white-fill {
+    display: none;
   }
 }
 

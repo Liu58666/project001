@@ -48,7 +48,7 @@ project001/
 
 公开官网页面：
 
-- `/` → `Home.vue`：首页容器，按顺序组合 `page_components/Main.vue`、`DailOverview.vue`、`Second.vue`、`NemoOneShowcase.vue`、`CompanyOrbitTransition.vue`、`Third.vue`、`End.vue`；其中 `DailOverview.vue` 使用纯白背景、黑色错落文字和进入视口后的遮罩揭字动画介绍 DAIL，随后由 `Second.vue` 的中央黑色区域扩张完成白转黑；Nemo One 区块使用单张主产品图、边缘渐隐、轻微漂浮和高光扫过形成动态展示，后续公司过渡区再承接到白色 CTA。
+- `/` → `Home.vue`：首页容器，按顺序组合 `page_components/Main.vue`、`DailOverview.vue`、`TechnologyNemoTransition.vue`、`AIOSShowcase.vue`、`Third.vue`、`End.vue`；`DailOverview.vue` 使用纯白图文轮播介绍 DAIL，`TechnologyNemoTransition.vue` 统一承载技术关系图与 Nemo 产品交接，`AIOSShowcase.vue` 在同一 sticky 场景中完成产品展示及黑色到纯白的虚化扩散，随后直接衔接白色 CTA。
 - `/about` → `About.vue`：关于页，组合 `About_one.vue` 到 `About_four.vue`。
 - `/technology` → `Technology.vue`：AI 原生技术体系页面；同一全屏深色纯文字关系图也由首页 `Second.vue` 直接复用，展示数据治理、模型工程、智能体开发和平台构建。
 - `/technology/:topicId` → `TechnologyTopic.vue`：四项技术能力的独立纯白详情页，使用大标题与简短介绍，并复用全局顶部导航和 `End.vue` 页尾；进入页面时序号、逐字/逐词标题、说明和按钮按顺序从下方浮现，直接打开页面时等待全局 Loader 完成后播放；`Listen to more hard questions` 按钮进入已有 `/coming-soon` 开发中页面。
@@ -274,3 +274,4 @@ python -m uvicorn app.main:app --reload
 - 2026-07-17：`DailOverview.vue` 的四张正式 PNG 保留带原始背景的版本，不使用透明抠图，图片层背景色仍设为纯白；桌面端首张激活图不再在屏幕外提前显示，而是等待区块首次达到进入阈值后，从下方约 `30px` 伴随去模糊、缩放复位和淡入浮现，后续自动轮播与 hover/focus 切图仍沿用原过渡，减少动画模式不播放该浮现效果。
 - 2026-07-17：`DailOverview.vue` 英文主标题精简为两行 `Beyond one-off delivery / Self-evolving industry intelligence`，仅在桌面英文版使用较小字号并强制每个标题节点保持单行，中文版及移动端排版不变；英文版右侧展示区向左扩展并额外加宽约 `64–90px`，继续直接缩小显示原始 `1672×941` PNG，不重新压缩或放大像素。
 - 2026-07-17：首页在 `TechnologyNemoTransition.vue` 与 `CompanyOrbitTransition.vue` 之间新增 `AIOSShowcase.vue` 全屏黑色展示页；桌面端左侧展示 AIOS 小标题、企业 AI 应用主副标题，右侧使用 `assets/images/prod/AIOS.png`，进入视口后文字上浮、产品图从右下方滑入；`900px` 以下改为文案在上、产品图在下的自然单列布局，并沿用透明导航与深色前景切换。
+- 2026-07-17：首页不再挂载独立的 `CompanyOrbitTransition.vue` 总结页，其源码继续保留用于回退；原页面的冷青白色虚化扩散与最终纯白覆盖已合并进上一页 `AIOSShowcase.vue`。桌面端 AIOS 改为约 `150svh` 的单一 sticky 场景，前段保留产品展示，后段按滚动进度让内容轻微上移、模糊淡出，同时由底部扩散光晕并自然过渡到纯白后直接衔接 `Third.vue`；`900px` 以下在同一 AIOS 区块底部使用静态黑灰白渐变，不运行桌面滚动擦除。
