@@ -47,7 +47,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18nStore } from '@/stores/i18n'
-import nemoFront from '@/assets/images/nemo-one/nemo-cooling.png'
+import nemoFront from '@/assets/images/prod/nemo-cooling.png'
 
 const i18n = useI18nStore()
 const t = (key) => i18n.t(key)
