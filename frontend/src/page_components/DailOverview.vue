@@ -344,7 +344,7 @@ onBeforeUnmount(() => {
 .overview-display__img {
   position: absolute;
   inset: 0;
-  background-color: #f4f4f4;
+  background-color: #ffffff;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -358,10 +358,14 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-.overview-display__img.is-active {
+.dail-overview:not(.dail-overview--visible) .overview-display__img {
+  transform: translateY(30px) scale(1.025);
+}
+
+.dail-overview--visible .overview-display__img.is-active {
   opacity: 1;
   filter: blur(0);
-  transform: scale(1);
+  transform: translateY(0) scale(1);
 }
 
 /* hover 激活某个关键点时，说明文字克制地上移淡出。 */
@@ -508,11 +512,26 @@ onBeforeUnmount(() => {
     transform: translateX(calc(var(--title-shift) * -1));
   }
 
+  .dail-overview:lang(en) .overview-title {
+    font-size: clamp(35px, 3.45vw, 66px);
+    line-height: 0.98;
+    letter-spacing: -0.055em;
+  }
+
+  .dail-overview:lang(en) .overview-title__line {
+    white-space: nowrap;
+  }
+
   /* 图片主体与左侧标题顶部呼应；理念句与左侧关键点标题行对齐。 */
   .overview-display {
     position: relative;
     inset-inline-start: clamp(22px, 2vw, 36px);
     top: calc(clamp(40px, 6vh, 56px) * -1);
+  }
+
+  .dail-overview:lang(en) .overview-display {
+    width: calc(100% + clamp(64px, 4.5vw, 90px));
+    inset-inline-start: calc(clamp(16px, 1.4vw, 26px) * -1);
   }
 
   .overview-close {

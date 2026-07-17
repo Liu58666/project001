@@ -74,8 +74,8 @@ const MESSAGES = {
       feature3: 'Medical Copilot · AI-MDT & Triage',
     },
     dailOverview: {
-      titleLine1: 'Not projects that end at delivery',
-      titleLine2: 'Self-built intelligence that keeps evolving',
+      titleLine1: 'Beyond one-off delivery',
+      titleLine2: 'Self-evolving industry intelligence',
       intro:
         'Self-built across all four layers—data, models, agents, and platform—DAIL turns trusted data and lean models into a governed, iterable system that grows with the business',
       pointsAria: 'DAIL full stack: data, models, agents, platform',
@@ -468,7 +468,7 @@ const MESSAGES = {
       feature3: '医疗助手 · AI-MDT 与分诊',
     },
     dailOverview: {
-      titleLine1: '不做交付即终点的项目',
+      titleLine1: '不做交付即终点的项目，',
       titleLine2: '做能自我进化的行业智能',
       intro: '从数据到平台四层全栈自研，德工把可信数据、小而美模型与智能体，沉淀为可治理、可迭代的系统，让智能长在场景里、随业务持续生长',
       pointsAria: 'DAIL 全栈四层：数据、模型、智能体、平台',
