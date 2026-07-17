@@ -358,6 +358,23 @@ const MESSAGES = {
       dominateComingSoonHint:
         'You can keep the tab now and wire it to your RBAC / ABAC later.',
     },
+    pages: {
+      home: {
+        headlineLine1: 'One Skill. Every Tool.',
+        headlineLine2Prefix: 'Better ',
+        headlineAccent: 'Flow.',
+        subtitleLine1:
+          'The platform connects with your favorite AI coding tools to help teams manage, package,',
+        subtitleLine2: 'and deploy Skills faster across every workspace.',
+        workflowLabel: 'Automation workflow',
+        stages: {
+          analyze: 'Analyze',
+          pack: 'Pack',
+          deploy: 'Deploy',
+          collaborate: 'Collaborate',
+        },
+      },
+    },
     intern: {
       preferenceResearch: 'Research',
       preferenceDevelopment: 'Development',
@@ -750,6 +767,23 @@ const MESSAGES = {
         '该区域预留用于权限管理：角色、策略、访问范围、审计日志与管理工具等。',
       dominateComingSoonHint: '你可以先保留该入口，后续接入 RBAC / ABAC。',
     },
+    pages: {
+      home: {
+        headlineLine1: '统一 Skill，跨平台适配，',
+        headlineLine2Prefix: '更好',
+        headlineAccent: '团队协作',
+        subtitleLine1:
+          '平台连接你常用的 AI 编程工具，帮助团队在不同工作空间中更快管理、打包并部署 Skill',
+        subtitleLine2: '',
+        workflowLabel: '自动化流程',
+        stages: {
+          analyze: 'Analyze',
+          pack: 'Pack',
+          deploy: 'Deploy',
+          collaborate: 'Collaborate',
+        },
+      },
+    },
     intern: {
       preferenceResearch: '科研',
       preferenceDevelopment: '开发',
@@ -845,4 +879,3 @@ export const useI18nStore = defineStore('i18n', () => {
     t,
   }
 })
-

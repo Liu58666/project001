@@ -517,15 +517,15 @@ onBeforeUnmount(() => {
     --aios-mobile-handoff: linear-gradient(
       180deg,
       #000000 0%,
-      #000000 67%,
-      #111212 74%,
-      #404242 82%,
-      #8f9191 88%,
-      #d6d7d7 94%,
+      #000000 74%,
+      #111212 80%,
+      #404242 86%,
+      #8f9191 91%,
+      #d6d7d7 96%,
       #ffffff 100%
     );
     height: auto;
-    min-height: 136svh;
+    min-height: 122svh;
     margin-bottom: -1px;
     background: var(--aios-mobile-handoff);
   }
@@ -534,7 +534,7 @@ onBeforeUnmount(() => {
     position: relative;
     top: auto;
     height: auto;
-    min-height: 136svh;
+    min-height: 122svh;
     background: var(--aios-mobile-handoff);
   }
 
