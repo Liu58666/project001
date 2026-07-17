@@ -25,7 +25,7 @@
 
       <div
         class="overview-display"
-        :class="{ 'overview-display--active': activePoint !== null }"
+        :class="{ 'overview-display--active': isInteractive }"
       >
         <div class="overview-display__frame">
           <div class="overview-intro">
@@ -35,7 +35,7 @@
             v-for="(point, index) in points"
             :key="point.key"
             class="overview-display__img"
-            :class="{ 'is-active': activePoint === index }"
+            :class="{ 'is-active': isInteractive && activePoint === index }"
             :style="{ backgroundImage: `url(${point.img})` }"
             aria-hidden="true"
           ></div>
@@ -48,8 +48,8 @@
           :key="point.key"
           class="overview-point"
           :class="{
-            'is-active': activePoint === index,
-            'is-dim': activePoint !== null && activePoint !== index,
+            'is-active': isInteractive && activePoint === index,
+            'is-dim': isInteractive && activePoint !== index,
           }"
           :style="{ '--point-index': index }"
           tabindex="0"
@@ -58,6 +58,14 @@
           @focusin="setActive(index)"
           @focusout="clearActive"
         >
+          <span class="overview-point__line" aria-hidden="true">
+            <span
+              class="overview-point__line-inner"
+              :style="{
+                width: isInteractive && activePoint === index ? `${pointProgress}%` : '0%',
+              }"
+            ></span>
+          </span>
           <span class="overview-point__num" aria-hidden="true">
             {{ String(index + 1).padStart(2, '0') }}
           </span>
@@ -76,10 +84,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18nStore } from '@/stores/i18n'
-import imgData from '@/assets/images/overview/data.svg'
-import imgModels from '@/assets/images/overview/models.svg'
-import imgAgents from '@/assets/images/overview/agents.svg'
-import imgPlatform from '@/assets/images/overview/platform.svg'
+import imgData from '@/assets/images/overview/data.png'
+import imgModels from '@/assets/images/overview/models.png'
+import imgAgents from '@/assets/images/overview/agents.png'
+import imgPlatform from '@/assets/images/overview/platform.png'
 
 const i18n = useI18nStore()
 const sectionRef = ref(null)
@@ -96,32 +104,83 @@ const points = computed(() => [
 ])
 
 const ENTRY_THRESHOLD = 0.24
+// 与首页 Main.vue 首屏轮播保持一致。
+const CAROUSEL_DURATION = 4000
+const CAROUSEL_STEP_MS = 40
+const POINT_COUNT = 4
 
-const activePoint = ref(null)
+const activePoint = ref(0)
+const pointProgress = ref(0)
 const isInteractive = ref(false)
+const isUserControlling = ref(false)
+const prefersReducedMotion = ref(false)
+
+let carouselTimer = null
+
+const stopCarousel = () => {
+  if (carouselTimer === null) return
+  window.clearInterval(carouselTimer)
+  carouselTimer = null
+}
+
+const startCarousel = () => {
+  stopCarousel()
+  if (
+    !isVisible.value ||
+    !isInteractive.value ||
+    isUserControlling.value ||
+    prefersReducedMotion.value
+  ) return
+
+  const step = 100 / (CAROUSEL_DURATION / CAROUSEL_STEP_MS)
+  carouselTimer = window.setInterval(() => {
+    pointProgress.value += step
+    if (pointProgress.value < 100) return
+    pointProgress.value = 0
+    activePoint.value = (activePoint.value + 1) % POINT_COUNT
+  }, CAROUSEL_STEP_MS)
+}
 
 const setActive = (index) => {
   if (!isInteractive.value) return
+  isUserControlling.value = true
+  stopCarousel()
   activePoint.value = index
+  pointProgress.value = prefersReducedMotion.value ? 100 : 0
 }
 
 const clearActive = () => {
   if (!isInteractive.value) return
-  activePoint.value = null
+  isUserControlling.value = false
+  pointProgress.value = prefersReducedMotion.value ? 100 : 0
+  startCarousel()
 }
 
 let observer = null
 let desktopQuery = null
+let reduceMotionQuery = null
 
 const syncInteractive = (event) => {
   isInteractive.value = event.matches
-  if (!event.matches) activePoint.value = null
+  isUserControlling.value = false
+  activePoint.value = 0
+  pointProgress.value = prefersReducedMotion.value ? 100 : 0
+  if (event.matches) startCarousel()
+  else stopCarousel()
+}
+
+const syncReducedMotion = (event) => {
+  prefersReducedMotion.value = event.matches
+  pointProgress.value = event.matches ? 100 : 0
+  if (event.matches) stopCarousel()
+  else startCarousel()
 }
 
 const reveal = () => {
   isVisible.value = true
   observer?.disconnect()
   observer = null
+  startCarousel()
 }
 
 onMounted(() => {
@@ -129,10 +188,14 @@ onMounted(() => {
   isInteractive.value = desktopQuery.matches
   desktopQuery.addEventListener('change', syncInteractive)
 
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  prefersReducedMotion.value = reduceMotionQuery.matches
+  pointProgress.value = reduceMotionQuery.matches ? 100 : 0
+  reduceMotionQuery.addEventListener('change', syncReducedMotion)
 
-  if (reduceMotion || !('IntersectionObserver' in window)) {
+  if (prefersReducedMotion.value || !('IntersectionObserver' in window)) {
     isVisible.value = true
+    startCarousel()
     return
   }
 
@@ -152,8 +215,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  stopCarousel()
   observer?.disconnect()
   desktopQuery?.removeEventListener('change', syncInteractive)
+  reduceMotionQuery?.removeEventListener('change', syncReducedMotion)
 })
 </script>
 
@@ -252,7 +317,7 @@ onBeforeUnmount(() => {
 .overview-display__frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 16 / 9;
 }
 
 .overview-intro {
@@ -329,32 +394,25 @@ onBeforeUnmount(() => {
   transition: opacity 0.45s ease;
 }
 
-/* 顶部细线：hover 时从左展开，作为克制的可交互反馈。 */
-.overview-point::before {
-  content: '';
+/* 与首页首屏一致的 2px 自动播放进度条。 */
+.overview-point__line {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 1px;
-  background: rgba(9, 9, 9, 0.16);
+  height: 2px;
+  overflow: hidden;
+  background: #e5e7eb;
 }
 
-.overview-point::after {
-  content: '';
+.overview-point__line-inner {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 1px;
-  background: #090909;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.overview-point.is-active::after {
-  transform: scaleX(1);
+  height: 100%;
+  width: 0;
+  background: #111827;
+  transition: width 0.08s linear;
 }
 
 .overview-point.is-dim {
@@ -362,11 +420,16 @@ onBeforeUnmount(() => {
 }
 
 .overview-point__num {
-  font-size: clamp(13px, 0.95vw, 15px);
-  font-weight: 520;
-  letter-spacing: 0.04em;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   font-variant-numeric: tabular-nums;
-  color: rgba(9, 9, 9, 0.42);
+  color: #6b7280;
+}
+
+.overview-point.is-active .overview-point__num {
+  color: #111827;
 }
 
 .overview-point__key {
@@ -439,6 +502,29 @@ onBeforeUnmount(() => {
 }
 
 @media (min-width: 901px) {
+  .overview-title {
+    --title-shift: clamp(5px, 0.5vw, 9px);
+    width: calc(100% + clamp(72px, 5.5vw, 96px));
+    transform: translateX(calc(var(--title-shift) * -1));
+  }
+
+  /* 图片主体与左侧标题顶部呼应；理念句与左侧关键点标题行对齐。 */
+  .overview-display {
+    position: relative;
+    inset-inline-start: clamp(22px, 2vw, 36px);
+    top: calc(clamp(40px, 6vh, 56px) * -1);
+  }
+
+  .overview-close {
+    position: relative;
+    align-self: start;
+    inset-inline-start: calc(clamp(12px, 1.2vw, 24px) * -1);
+    top: 0;
+    padding-top: calc(
+      clamp(16px, 1.5vw, 24px) + 17px + clamp(12px, 1.1vw, 18px)
+    );
+  }
+
   .dail-overview:lang(zh) .overview-title__line {
     white-space: nowrap;
   }
@@ -511,6 +597,10 @@ onBeforeUnmount(() => {
   .overview-point {
     padding-top: 12px;
     row-gap: 8px;
+  }
+
+  .overview-point__num {
+    font-size: 13px;
   }
 
   .overview-point__key {
@@ -587,12 +677,15 @@ onBeforeUnmount(() => {
   .overview-point__num,
   .overview-point__key,
   .overview-point__desc,
-  .overview-display__img,
-  .overview-point::after {
+  .overview-display__img {
     opacity: 1;
     clip-path: none;
     filter: none;
     transform: none;
+    transition: none;
+  }
+
+  .overview-point__line-inner {
     transition: none;
   }
 
