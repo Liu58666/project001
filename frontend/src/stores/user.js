@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { refreshAccessToken as refreshSessionToken, setAuthSessionHandlers } from '@/services/authSession'
 
 export const useUserStore = defineStore('user', () => {
   // 状态
@@ -93,29 +94,12 @@ export const useUserStore = defineStore('user', () => {
 
   async function refreshAccessToken() {
     if (isRefreshing.value) return false
-    const rt = String(refreshToken.value || '').trim()
-    if (!rt) return false
+    if (!String(refreshToken.value || '').trim()) return false
     if (isRefreshTokenExpired.value) return false
 
     isRefreshing.value = true
     try {
-      // Backend refresh endpoint (assumed consistent with /api/auth/login)
-      const resp = await postJson('/api/auth/refresh', { refresh_token: rt })
-      updateToken({
-        access_token: resp?.access_token,
-        refresh_token: resp?.refresh_token,
-        token_type: resp?.token_type,
-        access_expires_in: resp?.access_expires_in,
-        refresh_expires_in: resp?.refresh_expires_in,
-      })
-      scheduleTokenRefresh()
-      return true
-    } catch (e) {
-      // If refresh fails (expired / revoked), clear tokens.
-      if (e?.status === 401 || e?.status === 403) {
-        logout()
-      }
-      return false
+      return Boolean(await refreshSessionToken())
     } finally {
       isRefreshing.value = false
     }
@@ -343,7 +327,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 初始化：从存储中恢复状态
-  function init() {
+  async function init() {
     const storage = getStorage()
     accessToken.value = storage.getItem('access_token') || ''
     refreshToken.value = storage.getItem('refresh_token') || ''
@@ -364,8 +348,8 @@ export const useUserStore = defineStore('user', () => {
     if (accessTokenExpiresAt.value && now >= accessTokenExpiresAt.value) {
       // Try refresh if possible; otherwise clear access token
       if (refreshToken.value && !isRefreshTokenExpired.value) {
-        // Fire-and-forget; UI can stay logged-in seamlessly
-        refreshAccessToken()
+        // Wait before mounting so a valid session never flashes to the login view.
+        await refreshAccessToken()
       } else {
         accessToken.value = ''
         storage.removeItem('access_token')
@@ -382,6 +366,13 @@ export const useUserStore = defineStore('user', () => {
 
     scheduleTokenRefresh()
   }
+
+  setAuthSessionHandlers({
+    onTokenRefresh: (data) => updateToken(data),
+    onRefreshFailure: (error) => {
+      if (error?.status === 401) logout()
+    },
+  })
 
   // 更新用户资料（并写回当前存储：localStorage 或 sessionStorage）
   function setProfileFields(patch = {}) {

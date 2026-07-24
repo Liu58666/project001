@@ -1,6 +1,24 @@
-version: "3.9"
-
 services:
+  mysql:
+    image: mysql:8.4
+    container_name: dail_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-auth_service}
+      MYSQL_USER: ${MYSQL_USER:-dail_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dail_app_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-local-root-password}
+    volumes:
+      - dail_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
   backend:
     build: .
     container_name: dail_backend
@@ -9,5 +27,11 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://app:app@127.0.0.1:3306/auth_service}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-mysql+pymysql://dail_app:dail_app_password@mysql:3306/auth_service}
+    depends_on:
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  dail_mysql_data:

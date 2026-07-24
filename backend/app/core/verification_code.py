@@ -1,10 +1,12 @@
 """
 验证码生成和验证服务
 """
-import random
-from datetime import datetime, timedelta, timezone
+import hmac
+import secrets
+from datetime import datetime, timedelta
+from hashlib import sha256
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -18,7 +20,12 @@ def generate_code(length: int = None) -> str:
     """生成数字验证码"""
     if length is None:
         length = settings.verification_code_length
-    return "".join([str(random.randint(0, 9)) for _ in range(length)])
+    return "".join(str(secrets.randbelow(10)) for _ in range(length))
+
+
+def hash_verification_code(phone: str, code: str) -> str:
+    message = f"{str(phone).strip()}:{str(code).strip()}".encode("utf-8")
+    return hmac.new(settings.jwt_secret_key.encode("utf-8"), message, sha256).hexdigest()
 
 
 def create_verification_code(db: Session, phone: str) -> models.VerificationCode:
@@ -36,35 +43,35 @@ def create_verification_code(db: Session, phone: str) -> models.VerificationCode
     stmt = select(models.VerificationCode).where(
         models.VerificationCode.phone == phone,
         models.VerificationCode.is_used == False,
-        models.VerificationCode.expires_at > datetime.now(timezone.utc),
+        models.VerificationCode.expires_at > datetime.utcnow(),
     ).order_by(models.VerificationCode.created_at.desc())
     recent_code = db.scalar(stmt)
     if recent_code:
-        time_since_last = (datetime.now(timezone.utc) - recent_code.created_at).total_seconds()
+        time_since_last = (datetime.utcnow() - recent_code.created_at).total_seconds()
         if time_since_last < settings.verification_code_resend_interval_seconds:
             raise ValueError(
                 f"Please wait {int(settings.verification_code_resend_interval_seconds - time_since_last)} seconds before requesting a new code"
             )
 
-    # 将同一手机号的旧验证码标记为已使用（可选，也可以保留历史记录）
-    # db.execute(
-    #     update(models.VerificationCode)
-    #     .where(
-    #         models.VerificationCode.phone == phone,
-    #         models.VerificationCode.is_used == False
-    #     )
-    #     .values(is_used=True)
-    # )
+    db.execute(
+        update(models.VerificationCode)
+        .where(
+            models.VerificationCode.phone == phone,
+            models.VerificationCode.is_used == False,
+        )
+        .values(is_used=True)
+    )
 
     # 生成新验证码
     code = generate_code()
-    expires_at = datetime.now(timezone.utc) + timedelta(
+    expires_at = datetime.utcnow() + timedelta(
         minutes=settings.verification_code_expire_minutes
     )
 
     verification_code = models.VerificationCode(
         phone=phone,
-        code=code,
+        code="",
+        code_hash=hash_verification_code(phone, code),
         expires_at=expires_at,
         is_used=False,
     )
@@ -93,9 +100,9 @@ def verify_code(db: Session, phone: str, code: str) -> bool:
     """
     stmt = select(models.VerificationCode).where(
         models.VerificationCode.phone == phone,
-        models.VerificationCode.code == code,
+        models.VerificationCode.code_hash == hash_verification_code(phone, code),
         models.VerificationCode.is_used == False,
-        models.VerificationCode.expires_at > datetime.now(timezone.utc),
+        models.VerificationCode.expires_at > datetime.utcnow(),
     ).order_by(models.VerificationCode.created_at.desc())
 
     verification_code = db.scalar(stmt)

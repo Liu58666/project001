@@ -10,6 +10,7 @@ from sqlalchemy import (
     JSON,
     SmallInteger,
     String,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -251,6 +252,7 @@ class VerificationCode(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     code: Mapped[str] = mapped_column(String(10), nullable=False)
+    code_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     is_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
     created_at: Mapped[datetime] = mapped_column(
@@ -313,6 +315,7 @@ class NewsImage(Base):
     __table_args__ = (
         Index("ix_news_images_news_id", "news_id"),
         Index("ix_news_images_position", "position"),
+        Index("ix_news_images_display_order", "display_order"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -335,6 +338,9 @@ class NewsImage(Base):
     caption: Mapped[str] = mapped_column(
         String(500), nullable=False, default="", server_default="", doc="图片说明"
     )
+    display_order: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0", doc="新闻内展示顺序"
+    )
     uploaded_by: Mapped[int] = mapped_column(
         ForeignKey("users.id"), nullable=False, doc="上传用户ID"
     )
@@ -344,6 +350,26 @@ class NewsImage(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
+
+
+class StorageCleanupJob(Base):
+    __tablename__ = "storage_cleanup_jobs"
+    __table_args__ = (
+        Index("ix_storage_cleanup_jobs_status_created", "status", "created_at"),
+        Index("ix_storage_cleanup_jobs_cos_key", "cos_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    cos_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    source_table: Mapped[str] = mapped_column(String(100), nullable=False)
+    source_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", server_default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Task(Base):

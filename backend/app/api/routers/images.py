@@ -1,16 +1,19 @@
 """
 新闻图片上传和管理接口
 """
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_role_at_least
 from app.core.cos_service import cos_service
+from app.core.storage_cleanup import enqueue_storage_cleanup, process_pending_cleanup_jobs
 from app.db import models, schemas
 from app.db.database import get_db
 
 router = APIRouter(prefix="/api/images", tags=["images"])
+admin_router = APIRouter(prefix="/api/admin/images", tags=["admin-images"])
 
 # 支持的图片位置
 VALID_POSITIONS = ["cover", "content", "thumbnail", "banner", "gallery"]
@@ -33,7 +36,7 @@ async def upload_image(
     filename: str = Form(..., description="文件名"),
     caption: str = Form(default="", description="图片说明（可选）"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role_at_least(3)),
 ) -> schemas.NewsImageUploadResponse:
     """
     上传新闻图片到腾讯云 COS
@@ -97,7 +100,20 @@ async def upload_image(
         )
 
         db.add(news_image)
-        db.flush()
+        try:
+            db.flush()
+        except SQLAlchemyError:
+            db.rollback()
+            if upload_result.get("key"):
+                if not cos_service.delete_image(upload_result["key"]):
+                    enqueue_storage_cleanup(
+                        db,
+                        cos_key=upload_result["key"],
+                        source_table="news_images",
+                        source_id=None,
+                    )
+                    db.commit()
+            raise
         db.refresh(news_image)
 
         return schemas.NewsImageUploadResponse(
@@ -124,14 +140,14 @@ async def upload_image(
         )
 
 
-@router.get("", response_model=list[schemas.NewsImageOut])
+@router.get("", response_model=list[schemas.NewsImagePublicOut])
 async def list_images(
     position: str | None = Query(default=None, description="按位置筛选"),
     news_id: int | None = Query(default=None, description="按新闻ID筛选"),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
-) -> list[schemas.NewsImageOut]:
+) -> list[schemas.NewsImagePublicOut]:
     """
     查询图片列表
     
@@ -140,7 +156,7 @@ async def list_images(
     - **limit**: 返回数量限制
     - **offset**: 偏移量
     """
-    stmt = select(models.NewsImage)
+    stmt = select(models.NewsImage).where(models.NewsImage.news_id.is_not(None))
 
     # 应用筛选条件
     if position:
@@ -158,31 +174,68 @@ async def list_images(
     stmt = stmt.order_by(models.NewsImage.created_at.desc()).limit(limit).offset(offset)
 
     rows = db.scalars(stmt).all()
-    return [schemas.NewsImageOut.model_validate(img) for img in rows]
+    return [schemas.NewsImagePublicOut.model_validate(img) for img in rows]
 
 
-@router.get("/{image_id}", response_model=schemas.NewsImageOut)
+@router.get("/{image_id}", response_model=schemas.NewsImagePublicOut)
 async def get_image(
     image_id: int,
     db: Session = Depends(get_db),
-) -> schemas.NewsImageOut:
+) -> schemas.NewsImagePublicOut:
     """
     获取单个图片信息
     """
     image = db.get(models.NewsImage, image_id)
-    if not image:
+    if not image or image.news_id is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="图片不存在",
         )
+    return schemas.NewsImagePublicOut.model_validate(image)
+
+
+@admin_router.get("", response_model=list[schemas.NewsImageOut])
+async def admin_list_images(
+    position: str | None = Query(default=None, description="按位置筛选"),
+    news_id: int | None = Query(default=None, description="按新闻ID筛选"),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role_at_least(3)),
+) -> list[schemas.NewsImageOut]:
+    stmt = select(models.NewsImage)
+    if position:
+        if position not in VALID_POSITIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"无效的图片位置。支持的位置：{', '.join(VALID_POSITIONS)}",
+            )
+        stmt = stmt.where(models.NewsImage.position == position)
+    if news_id is not None:
+        stmt = stmt.where(models.NewsImage.news_id == news_id)
+    stmt = stmt.order_by(models.NewsImage.created_at.desc()).limit(limit).offset(offset)
+    rows = db.scalars(stmt).all()
+    return [schemas.NewsImageOut.model_validate(img) for img in rows]
+
+
+@admin_router.get("/{image_id}", response_model=schemas.NewsImageOut)
+async def admin_get_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role_at_least(3)),
+) -> schemas.NewsImageOut:
+    image = db.get(models.NewsImage, image_id)
+    if not image:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="图片不存在")
     return schemas.NewsImageOut.model_validate(image)
 
 
 @router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_image(
     image_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role_at_least(3)),
 ) -> None:
     """
     删除图片
@@ -198,20 +251,11 @@ async def delete_image(
             detail="图片不存在",
         )
 
-    # 权限检查：只有上传者或管理员可以删除
-    if image.uploaded_by != current_user.id and int(current_user.role) < 3:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权删除此图片",
-        )
-
     try:
-        # 从 COS 删除
-        cos_service.delete_image(image.cos_key)
-
-        # 从数据库删除
+        enqueue_storage_cleanup(db, cos_key=image.cos_key, source_table="news_images", source_id=int(image.id))
         db.delete(image)
         db.flush()
+        background_tasks.add_task(process_pending_cleanup_jobs)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -224,7 +268,7 @@ async def link_image_to_news(
     image_id: int,
     news_id: int = Form(..., description="要关联的新闻ID"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role_at_least(3)),
 ) -> schemas.NewsImageOut:
     """
     将图片关联到新闻
@@ -238,13 +282,6 @@ async def link_image_to_news(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="图片不存在",
-        )
-
-    # 权限检查
-    if image.uploaded_by != current_user.id and int(current_user.role) < 3:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权修改此图片",
         )
 
     # 验证新闻是否存在
@@ -269,7 +306,7 @@ async def update_image_caption(
     image_id: int,
     caption: str = Form(..., description="图片说明"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role_at_least(3)),
 ) -> schemas.NewsImageOut:
     """
     更新图片说明
@@ -283,13 +320,6 @@ async def update_image_caption(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="图片不存在",
-        )
-
-    # 权限检查
-    if image.uploaded_by != current_user.id and int(current_user.role) < 3:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权修改此图片",
         )
 
     image.caption = caption

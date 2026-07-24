@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import Path
 
@@ -21,22 +20,51 @@ from app.api.routers import user_images
 from app.api.routers import tasks
 from app.api.routers import users
 from app.core.config import get_settings
-from app.db.database import Base, engine
+from app.core.config import Settings
 
-logger = logging.getLogger(__name__)
+def _configure_cors(app: FastAPI, settings: Settings) -> None:
+    origins = settings.cors_origins
+    development_origins = {"http://localhost:5173", "http://127.0.0.1:5173"}
+    if settings.environment in {"development", "test"}:
+        if not origins:
+            origins = sorted(development_origins)
+        if set(origins) - development_origins:
+            raise RuntimeError("Development CORS origins are limited to the local Vite servers")
+    if settings.environment == "production":
+        if not origins:
+            raise RuntimeError("CORS_ALLOWED_ORIGINS must be configured in production")
+        if "*" in origins:
+            raise RuntimeError("CORS_ALLOWED_ORIGINS cannot contain * in production")
+    if "*" in origins:
+        raise RuntimeError("CORS_ALLOWED_ORIGINS cannot use * when credentials are enabled")
 
-
-def create_app() -> FastAPI:
-    app = FastAPI(title="AuthService", version="0.1.0")
-
-    # CORS placeholder; configure origins as needed
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+
+def _run_migrations(settings: Settings) -> None:
+    os.environ["DATABASE_URL"] = settings.database_url.unicode_string()
+
+    repo_root = Path(__file__).resolve().parents[1]
+    alembic_ini = repo_root / "alembic.ini"
+
+    alembic_cfg = Config(str(alembic_ini))
+    alembic_cfg.set_main_option("script_location", str(repo_root / "alembic"))
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url.unicode_string())
+
+    command.upgrade(alembic_cfg, "head")
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    app = FastAPI(title="AuthService", version="0.1.0", debug=settings.debug)
+
+    _configure_cors(app, settings)
 
     # Include routers
     app.include_router(auth.router)
@@ -49,37 +77,17 @@ def create_app() -> FastAPI:
     app.include_router(messages.router)
     app.include_router(news.router)
     app.include_router(images.router)
+    app.include_router(images.admin_router)
     app.include_router(resumes.router)
     app.include_router(user_images.router)
     app.include_router(tasks.router)
     app.include_router(tasks.admin_router)
     app.include_router(users.router)
 
-    # For local dev convenience; prefer Alembic in real deployments
     @app.on_event("startup")
-    def _create_tables() -> None:
-        # Run Alembic migrations automatically (keeps DB schema in sync with models)
-        try:
-            settings = get_settings()
-            # alembic.ini uses %(DATABASE_URL)s interpolation; ensure it's present
-            os.environ["DATABASE_URL"] = settings.database_url.unicode_string()
-
-            repo_root = Path(__file__).resolve().parents[1]
-            alembic_ini = repo_root / "alembic.ini"
-
-            alembic_cfg = Config(str(alembic_ini))
-            # Use absolute script_location to avoid cwd issues
-            alembic_cfg.set_main_option("script_location", str(repo_root / "alembic"))
-            # Also set url explicitly (env.py will set too; harmless)
-            alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url.unicode_string())
-
-            command.upgrade(alembic_cfg, "head")
-        except Exception as e:
-            # Don't hard-fail startup; keep legacy behavior for dev
-            logger.exception("Failed to run Alembic migrations on startup: %s", e)
-
-        # Fallback: create missing tables (will NOT ALTER existing tables)
-        Base.metadata.create_all(bind=engine)
+    def _startup_migrations() -> None:
+        if settings.auto_migrate:
+            _run_migrations(settings)
 
     return app
 

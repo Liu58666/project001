@@ -36,9 +36,6 @@ const userStore = useUserStore()
 const showLoader = ref(true)
 const loaderFinished = ref(false)
 
-// 初始化用户状态（从存储中恢复）
-userStore.init()
-
 // 提供给子组件，通知过场动画已结束
 provide('loaderFinished', loaderFinished)
 

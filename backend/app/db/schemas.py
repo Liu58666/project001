@@ -101,7 +101,7 @@ class AdminUserUpdate(BaseModel):
     birthday: Optional[date] = Field(default=None)
     photo: Optional[str] = Field(default=None, max_length=255, description="头像URL（如需手工指定）")
     is_active: Optional[bool] = Field(default=None)
-    role: Optional[int] = Field(default=None, ge=0, le=10)
+    role: Optional[int] = Field(default=None, ge=0, le=4)
     password: Optional[str] = Field(default=None, min_length=8, max_length=128, description="重置密码（可选）")
 
 
@@ -224,7 +224,7 @@ class NewsBase(BaseModel):
 
 
 class NewsCreate(NewsBase):
-    pass
+    image_ids: list[int] = Field(default_factory=list, description="待关联新闻图片ID，按顺序去重")
 
 
 class NewsImageItem(BaseModel):
@@ -260,6 +260,20 @@ class NewsImageBase(BaseModel):
     news_id: Optional[int] = Field(default=None, description="关联的新闻ID，可为空")
 
 
+class NewsImagePublicOut(NewsImageBase):
+    id: int
+    url: str = Field(description="完整URL")
+    file_size: int = Field(description="文件大小（字节）")
+    width: int = Field(description="图片宽度（像素）")
+    height: int = Field(description="图片高度（像素）")
+    caption: str = Field(default="", description="图片说明")
+    display_order: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class NewsImageCreate(NewsImageBase):
     pass
 
@@ -273,6 +287,7 @@ class NewsImageOut(NewsImageBase):
     width: int = Field(description="图片宽度（像素）")
     height: int = Field(description="图片高度（像素）")
     caption: str = Field(default="", description="图片说明")
+    display_order: int = 0
     uploaded_by: int = Field(description="上传用户ID")
     created_at: datetime
     updated_at: datetime

@@ -271,7 +271,7 @@ import { useSuccessStore } from '@/stores/success'
 import { useWarningStore } from '@/stores/warning'
 import { useUserStore } from '@/stores/user'
 import { createNews, formatDateLong } from '@/services/newsService'
-import { uploadImage, linkImageToNews } from '@/services/imageService'
+import { uploadImage } from '@/services/imageService'
 
 const router = useRouter()
 const i18n = useI18nStore()
@@ -905,9 +905,10 @@ async function publish() {
     subtitle: article.value.subtitle,
     author: article.value.author,
     content: getCurrentContent(),
-    // 添加图片信息
-    cover_image: coverImage.value?.url || null,
-    images: contentImages.value,
+    image_ids: [...new Set([
+      coverImage.value?.id,
+      ...contentImages.value.map((image) => image?.id),
+    ].filter(Boolean))],
   }
 
   // Basic validation (backend still validates)
@@ -923,22 +924,6 @@ async function publish() {
   isPublishing.value = true
   try {
     const data = await createNews(payload)
-    const newsId = data?.id
-
-    // 如果有图片且返回了新闻ID，关联图片到新闻
-    if (newsId) {
-      const imageIds = []
-      if (coverImage.value?.id) imageIds.push(coverImage.value.id)
-      contentImages.value.forEach((img) => {
-        if (img.id) imageIds.push(img.id)
-      })
-
-      // 并行关联所有图片
-      await Promise.all(
-        imageIds.map((imgId) => linkImageToNews(imgId, newsId).catch(() => null))
-      )
-    }
-
     successStore.showSuccess(t('user.newsSuccess') || (i18n.locale === 'zh' ? '发布成功' : 'Published'))
     const slug = data?.slug || payload.slug
     if (slug) router.push({ name: 'news-detail', params: { slug } })

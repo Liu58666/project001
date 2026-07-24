@@ -234,7 +234,10 @@ const isZh = computed(() => i18n.locale === 'zh')
 const pageEnter = ref(false)
 
 // Role options from global definition
-const roleOptions = computed(() => getRoleOptions(isZh.value ? 'zh' : 'en'))
+const roleOptions = computed(() => {
+  const maximumRole = isAdmin.value ? 4 : 2
+  return getRoleOptions(isZh.value ? 'zh' : 'en').filter((option) => option.value <= maximumRole)
+})
 
 // Check if current user has manager role (role >= 3)
 const isManager = computed(() => {

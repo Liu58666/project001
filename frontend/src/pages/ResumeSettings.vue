@@ -63,7 +63,8 @@
             <div class="info-row">
               <label class="info-field">
                 <span class="info-label">{{ isZh ? '电话' : 'Phone' }}</span>
-                <input class="info-control" v-model.trim="form.phone" :placeholder="isZh ? '电话' : 'Phone'" />
+                <input class="info-control" :value="form.phone" readonly :placeholder="isZh ? '电话' : 'Phone'" />
+                <small class="field-note">{{ isZh ? '手机号来自注册账号，暂不支持在此修改。' : 'Phone comes from your registered account and cannot be changed here.' }}</small>
               </label>
               <label class="info-field">
                 <span class="info-label">{{ isZh ? '所在地' : 'Location' }}</span>
@@ -172,6 +173,7 @@ import { useWarningStore } from '@/stores/warning'
 
 import { createOrUpdateResume, getMyResume } from '@/services/resumeService'
 import { uploadUserImage } from '@/services/userImageService'
+import { patchMyProfile } from '@/services/profileService'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -586,8 +588,8 @@ function applyResumeToForm(r) {
   form.age = age === null || age === undefined || age === '' ? null : Number(age)
   form.address = String(r?.address ?? '')
   form.is_public = Boolean(r?.is_public ?? r?.isPublic ?? false)
-  form.email = String(r?.email ?? '')
-  form.phone = String(r?.phone ?? '')
+  form.email = String(r?.email ?? userStore.email ?? '')
+  form.phone = String(r?.phone ?? userStore.phone ?? '')
   extras.job_title = String(r?.job_title ?? r?.title ?? r?.position ?? r?.tagline ?? '')
   extras.education = String(r?.education ?? '')
   extras.department = String(r?.department ?? '')
@@ -668,20 +670,13 @@ function buildBioArray() {
 }
 
 async function saveProfile() {
-  isSavingProfile.value = true
-  try {
-    const patch = { email: String(profile.email || '').trim(), phone: String(profile.phone || '').trim() }
-    const data = await patchMyProfile(patch)
-    applyProfileFromApi(data)
-  } catch (e) {
-    if (e?.status === 404) return
-    warningStore.showWarning(isZh.value ? '邮箱/电话保存失败（已跳过）' : 'Email/phone save failed (skipped)')
-  } finally {
-    isSavingProfile.value = false
-  }
+  const data = await patchMyProfile({ email: String(form.email || '').trim() })
+  form.email = String(data?.email ?? form.email ?? '')
+  userStore.setProfileFields({ email: form.email, updatedAt: data?.updated_at })
+  return data
 }
 
-async function saveResume() {
+async function saveResume(manageLoading = true) {
   const basePayload = {
     real_name: String(form.real_name || '').trim(),
     gender: form.gender || null,
@@ -689,14 +684,11 @@ async function saveResume() {
     address: String(form.address || '').trim(),
     bio: buildBioArray(),
     is_public: Boolean(form.is_public),
-    email: String(form.email || '').trim(),
-    phone: String(form.phone || '').trim(),
   }
   if (!basePayload.real_name) {
-    errorStore.showError(isZh.value ? '真实姓名为必填' : 'Real name is required')
-    return
+    throw new Error(isZh.value ? '真实姓名为必填' : 'Real name is required')
   }
-  isSavingResume.value = true
+  if (manageLoading) isSavingResume.value = true
   try {
     const extended = {
       ...basePayload,
@@ -714,16 +706,27 @@ async function saveResume() {
       } else { throw e }
     }
     resume.value = data || resume.value
-    successStore.showSuccess(isZh.value ? '履历已保存' : 'Saved')
+    return data
+  } catch (e) {
+    throw e
+  } finally {
+    if (manageLoading) isSavingResume.value = false
+  }
+}
+
+async function saveAll() {
+  if (isSavingResume.value) return
+  isSavingResume.value = true
+  try {
+    // Save the profile first because the backend copies its email to the resume.
+    await saveProfile()
+    await saveResume(false)
+    successStore.showSuccess(isZh.value ? '邮箱和履历已保存' : 'Email and resume saved')
   } catch (e) {
     errorStore.showError(isZh.value ? `保存失败：${e?.message || e}` : `Save failed: ${e?.message || e}`)
   } finally {
     isSavingResume.value = false
   }
-}
-
-async function saveAll() {
-  await saveResume()
 }
 
 onMounted(async () => {

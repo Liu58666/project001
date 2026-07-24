@@ -5,6 +5,7 @@
     class="technology-nemo-scene"
     :lang="i18n.locale"
   >
+    <span id="nemo-one" class="nemo-navigation-anchor" aria-hidden="true"></span>
     <div class="scene-stage">
       <div
         ref="surfaceRef"
@@ -71,7 +72,6 @@ let expansionReady = false
 let interactionZoneActive = false
 let transitionAnchorProgress = 0
 let lastScrollY = 0
-let lastTouchY = null
 
 const TRANSITION_DURATION_MS = 980
 
@@ -84,6 +84,17 @@ const smooth = (value) => {
 
 const setSceneVariable = (name, value) => {
   surfaceRef.value?.style.setProperty(name, value)
+}
+
+const cancelTransition = () => {
+  if (transitionTimer !== null) {
+    window.clearTimeout(transitionTimer)
+    transitionTimer = null
+  }
+  transitionRunning = false
+  transitionStarted.value = false
+  transitionComplete.value = false
+  transitionAnchorProgress = 0
 }
 
 const updateScene = () => {
@@ -102,6 +113,7 @@ const updateScene = () => {
     || (window.innerWidth <= 900 ? 68 : 80)
 
   if (!isDesktop) {
+    cancelTransition()
     expansionReady = false
     interactionZoneActive = false
     surface.style.clipPath = 'none'
@@ -125,15 +137,33 @@ const updateScene = () => {
   const sceneProgress = clamp(-bounds.top / scrollDistance)
   interactionZoneActive = bounds.top <= 1 && bounds.bottom >= viewportHeight - 1
 
+  // Leaving the scene or returning to the page top must not leave a delayed
+  // handoff or its CSS state behind.
+  if (
+    transitionStarted.value
+    && (window.scrollY <= 8 || bounds.bottom <= 0 || bounds.top >= viewportHeight)
+  ) {
+    cancelTransition()
+  }
+
+  if (
+    !transitionStarted.value
+    && !transitionRunning
+    && !transitionComplete.value
+    && expansionReady
+    && interactionZoneActive
+    && sceneProgress >= 0.035
+  ) {
+    startFixedTransition()
+  }
+
   if (
     transitionStarted.value
     && !transitionRunning
     && window.scrollY < lastScrollY - 1
     && bounds.top > 1
   ) {
-    transitionStarted.value = false
-    transitionComplete.value = false
-    transitionAnchorProgress = 0
+    cancelTransition()
   }
   lastScrollY = window.scrollY
 
@@ -153,10 +183,6 @@ const updateScene = () => {
 const requestSceneUpdate = () => {
   if (updateFrame !== null) return
   updateFrame = window.requestAnimationFrame(updateScene)
-}
-
-const preventForwardInput = (event) => {
-  if (event.cancelable) event.preventDefault()
 }
 
 const startFixedTransition = () => {
@@ -183,86 +209,19 @@ const startFixedTransition = () => {
   }, TRANSITION_DURATION_MS)
 }
 
-const handleForwardIntent = (event) => {
-  if (transitionRunning) {
-    preventForwardInput(event)
-    return
-  }
-
-  if (
-    !transitionComplete.value
-    && expansionReady
-    && interactionZoneActive
-  ) {
-    preventForwardInput(event)
-    startFixedTransition()
-  }
-}
-
-const handleWheel = (event) => {
-  if (event.deltaY <= 0 || event.ctrlKey) return
-  handleForwardIntent(event)
-}
-
-const handleKeyDown = (event) => {
-  const target = event.target
-  if (
-    target instanceof HTMLElement
-    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
-  ) return
-
-  const isForwardSpace = event.key === ' ' && !event.shiftKey
-  if (!isForwardSpace && !['ArrowDown', 'PageDown', 'End'].includes(event.key)) return
-  if (isForwardSpace && target instanceof HTMLButtonElement) return
-  handleForwardIntent(event)
-}
-
-const handleTouchStart = (event) => {
-  lastTouchY = event.touches.length === 1 ? event.touches[0].clientY : null
-}
-
-const handleTouchMove = (event) => {
-  if (event.touches.length !== 1) {
-    lastTouchY = null
-    return
-  }
-
-  const currentTouchY = event.touches[0].clientY
-  if (lastTouchY !== null && lastTouchY - currentTouchY > 0) {
-    handleForwardIntent(event)
-  }
-  lastTouchY = currentTouchY
-}
-
-const handleTouchEnd = () => {
-  lastTouchY = null
-}
-
 onMounted(() => {
   lastScrollY = window.scrollY
   updateScene()
   window.requestAnimationFrame(requestSceneUpdate)
   window.addEventListener('scroll', requestSceneUpdate, { passive: true })
   window.addEventListener('resize', requestSceneUpdate, { passive: true })
-  window.addEventListener('wheel', handleWheel, { passive: false })
-  window.addEventListener('keydown', handleKeyDown)
-  window.addEventListener('touchstart', handleTouchStart, { passive: true })
-  window.addEventListener('touchmove', handleTouchMove, { passive: false })
-  window.addEventListener('touchend', handleTouchEnd, { passive: true })
-  window.addEventListener('touchcancel', handleTouchEnd, { passive: true })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', requestSceneUpdate)
   window.removeEventListener('resize', requestSceneUpdate)
-  window.removeEventListener('wheel', handleWheel)
-  window.removeEventListener('keydown', handleKeyDown)
-  window.removeEventListener('touchstart', handleTouchStart)
-  window.removeEventListener('touchmove', handleTouchMove)
-  window.removeEventListener('touchend', handleTouchEnd)
-  window.removeEventListener('touchcancel', handleTouchEnd)
   if (updateFrame !== null) window.cancelAnimationFrame(updateFrame)
-  if (transitionTimer !== null) window.clearTimeout(transitionTimer)
+  cancelTransition()
   document.body.classList.remove('technology-nemo-theme-active')
 })
 </script>
@@ -274,6 +233,15 @@ onBeforeUnmount(() => {
   min-height: 185vh;
   min-height: 185svh;
   background: #ffffff;
+}
+
+.nemo-navigation-anchor {
+  position: absolute;
+  top: 3.5svh;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
 }
 
 .scene-stage {
@@ -511,6 +479,10 @@ onBeforeUnmount(() => {
     background: #000000;
   }
 
+  .nemo-navigation-anchor {
+    top: 100svh;
+  }
+
   .scene-stage {
     position: relative;
     top: auto;
@@ -589,6 +561,10 @@ onBeforeUnmount(() => {
   .technology-nemo-scene {
     min-height: 0;
     background: #000000;
+  }
+
+  .nemo-navigation-anchor {
+    top: 100svh;
   }
 
   .scene-stage {

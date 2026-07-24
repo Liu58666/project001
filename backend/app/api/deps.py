@@ -90,3 +90,18 @@ def get_current_user_optional(
     return user
 
 
+def require_role_at_least(min_role: int):
+    def _dependency(current_user: models.User = Depends(get_current_user)) -> models.User:
+        if int(current_user.role) < int(min_role):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        return current_user
+
+    return _dependency
+
+
+def require_role_3_or_4(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if int(current_user.role) not in (3, 4):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+    return current_user
+
+

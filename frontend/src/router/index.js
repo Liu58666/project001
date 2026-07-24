@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { START_LOCATION, createRouter, createWebHistory } from 'vue-router'
 import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
 import Register from '@/pages/Register.vue'
@@ -61,7 +61,23 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior() {
+  scrollBehavior(to, from) {
+    const [navigationEntry] = window.performance?.getEntriesByType('navigation') ?? []
+    const isHomeReload = from === START_LOCATION
+      && to.path === '/'
+      && navigationEntry?.type === 'reload'
+
+    if (isHomeReload) {
+      return { left: 0, top: 0 }
+    }
+
+    if (to.hash) {
+      return {
+        el: to.hash,
+        top: 0,
+        behavior: 'smooth',
+      }
+    }
     return { top: 0 }
   }
 })

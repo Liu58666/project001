@@ -1,7 +1,7 @@
 .home-hero {
   position: relative;
   z-index: 3;
-  /* 缩短滚动轨道，让同样一次滚轮输入推进更多动画进度。 */
+  /* 桌面首屏按滚动卡点分段定时播放，额外高度用于阶段触发和自然离场。 */
   min-height: 150svh;
   padding: 0 1.5rem;
   --fg: #171717;

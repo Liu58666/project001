@@ -72,60 +72,11 @@ const activeWorkflow = ref("analyze");
 const isSectionActive = ref(false);
 const heroRef = ref(null);
 let motionFrame = 0;
-let scrollAnimationFrame = 0;
-let isAutoPlaying = false;
-let autoPlayDir = 0;
 
 function selectWorkflow(key) {
   activeWorkflow.value = key;
 }
 
-function cancelScrollAnimation() {
-  if (scrollAnimationFrame) {
-    cancelAnimationFrame(scrollAnimationFrame);
-    scrollAnimationFrame = 0;
-  }
-}
-
-function cancelAutoPlay() {
-  cancelScrollAnimation();
-  isAutoPlaying = false;
-  autoPlayDir = 0;
-}
-
-function smoothScrollTo(targetY, duration, onDone) {
-  const startY = window.scrollY;
-  const delta = targetY - startY;
-  cancelScrollAnimation();
-  if (Math.abs(delta) < 1) {
-    onDone?.();
-    return;
-  }
-
-  const startedAt = performance.now();
-  const easeInOutCubic = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
-
-  const step = (now) => {
-    const p = Math.min((now - startedAt) / duration, 1);
-    window.scrollTo({
-      top: startY + delta * easeInOutCubic(p),
-      left: 0,
-      behavior: "instant",
-    });
-    updateHomeMotion();
-
-    if (p < 1) {
-      scrollAnimationFrame = requestAnimationFrame(step);
-    } else {
-      scrollAnimationFrame = 0;
-      onDone?.();
-    }
-  };
-
-  scrollAnimationFrame = requestAnimationFrame(step);
-}
-
-// Soft, eased return to the top so the collapse "rewinds" gently instead of snapping.
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -135,94 +86,14 @@ function smoothStep(value) {
   return normalized * normalized * (3 - 2 * normalized);
 }
 
-// The retained sequence has two scroll checkpoints: supporting content clears first,
-// then the dashboard expands to the full-screen terminal frame.
 const PHASE = {
   lift: 0.134,
   detent: 0.067,
   takeover: 0.089,
 };
 const TAKEOVER_END = PHASE.lift + PHASE.detent + PHASE.takeover;
-const DETENT_CP = PHASE.lift;
 const FULL_CP = TAKEOVER_END;
-
-function animationProgressFor(scrollRange, hero) {
-  const physical = clamp((window.scrollY - hero.offsetTop) / scrollRange, 0, 1);
-  return physical * FULL_CP;
-}
-
-function getHeroScrollMetrics() {
-  const hero = heroRef.value;
-  if (!hero) return null;
-
-  const pageScrollRange = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
-  const heroScrollRange = Math.max(hero.offsetHeight - window.innerHeight, 1);
-  const scrollRange = Math.min(pageScrollRange, heroScrollRange);
-  const progress = animationProgressFor(scrollRange, hero);
-  return { hero, scrollRange, progress };
-}
-
-function startAutoPlay(hero, scrollRange, targetProgress, dir) {
-  const physicalRatio = clamp(targetProgress / FULL_CP, 0, 1);
-  const targetY = hero.offsetTop + physicalRatio * scrollRange;
-  const distance = Math.abs(targetY - window.scrollY);
-  const duration = clamp(620 + distance * 0.12, 720, 1400);
-  isAutoPlaying = true;
-  autoPlayDir = dir;
-  smoothScrollTo(targetY, duration, () => {
-    isAutoPlaying = false;
-    autoPlayDir = 0;
-  });
-}
-
-// The forward gesture keeps one deliberate snap from the text-clear checkpoint to
-// the full-screen dashboard. Reverse scrolling remains native for a responsive rewind.
-function onHeroWheel(event) {
-  const section = heroRef.value;
-  if (!section) return;
-  const bounds = section.getBoundingClientRect();
-  const navHeight = document.querySelector(".nav")?.getBoundingClientRect().height ?? 80;
-  const isEngaged = bounds.top <= navHeight + 2 && bounds.bottom > window.innerHeight * 0.35;
-  if (!isEngaged) return;
-
-  const terminalY = section.offsetTop + section.offsetHeight - window.innerHeight;
-  if (window.scrollY > terminalY + 2) return;
-
-  if (isAutoPlaying) {
-    // A flick in the opposite direction cancels the short forward snap immediately.
-    if ((autoPlayDir > 0 && event.deltaY < 0) || (autoPlayDir < 0 && event.deltaY > 0)) {
-      cancelAutoPlay();
-    } else {
-      event.preventDefault();
-    }
-    return;
-  }
-
-  // Hand control back from any other soft-scroll (e.g. goToTop) on manual input.
-  if (scrollAnimationFrame) {
-    cancelScrollAnimation();
-  }
-
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (prefersReducedMotion) return;
-
-  const metrics = getHeroScrollMetrics();
-  if (!metrics) return;
-  const { hero, scrollRange, progress } = metrics;
-
-  const segmentSplit = TAKEOVER_END - 0.01;
-
-  if (event.deltaY > 0) {
-    // Scroll DOWN: advance to the next checkpoint in one gesture.
-    if (progress >= DETENT_CP && progress < segmentSplit) {
-      event.preventDefault();
-      startAutoPlay(hero, scrollRange, FULL_CP, 1); // 卡点 -> full-screen image
-    }
-    return;
-  }
-
-  // Upward scrolling stays native and continuously rewinds the visual state.
-}
+const EXIT_DOWN_OFFSET = 0.18;
 
 function setCoverTransition(hero, element, token, headlineBottom, motionLayerTop, liftDistance, progress, options = {}) {
   if (!element) return;
@@ -286,8 +157,6 @@ function updateTerminalMotion() {
   }
 
   const entryProgress = Math.max(localEntryProgress, aiosHandoffProgress);
-  isSectionActive.value = entryProgress > 0.001 && sectionBounds.bottom > 0;
-  hero.style.setProperty("--home-section-entry-opacity", entryProgress.toFixed(3));
 
   const headline = hero.querySelector(".home-headline");
   const motionLayer = hero.querySelector(".home-motion-layer");
@@ -298,22 +167,47 @@ function updateTerminalMotion() {
 
   const heroScrollRange = Math.max(hero.offsetHeight - window.innerHeight, 1);
   const terminalY = hero.offsetTop + heroScrollRange;
-  const exitProgress = clamp(
-    (window.scrollY - terminalY) / Math.max(window.innerHeight * 0.78, 1),
+  const exitEndY = terminalY + window.innerHeight * EXIT_DOWN_OFFSET;
+  const exitEase = smoothStep(
+    (window.scrollY - terminalY) / Math.max(exitEndY - terminalY, 1),
+  );
+  // Visibility is isolated from animation progress. The full timed sequence continues
+  // offscreen, while the fixed layer is clipped before the CTA becomes visible.
+  const visibilityFloor = Math.max(navHeight, window.innerHeight * 0.58);
+  const isInsideDisplayBand = sectionBounds.top < window.innerHeight
+    && sectionBounds.bottom > visibilityFloor;
+  isSectionActive.value = entryProgress > 0.001 && isInsideDisplayBand;
+  hero.style.setProperty("--home-section-entry-opacity", entryProgress.toFixed(3));
+  const physicalProgress = clamp(
+    (window.scrollY - hero.offsetTop) / heroScrollRange,
     0,
     1,
   );
-  const exitEase = exitProgress * exitProgress * (3 - 2 * exitProgress);
-  const progress = clamp((window.scrollY - hero.offsetTop) / heroScrollRange, 0, 1) * FULL_CP;
-  const liftProgress = clamp(progress / PHASE.lift, 0, 1);
-  const takeoverProgress = clamp((progress - PHASE.lift - PHASE.detent) / PHASE.takeover, 0, 1);
+  const timedProgress = physicalProgress * FULL_CP;
+  const liftProgress = clamp(timedProgress / PHASE.lift, 0, 1);
+  const takeoverProgress = clamp(
+    (timedProgress - PHASE.lift - PHASE.detent) / PHASE.takeover,
+    0,
+    1,
+  );
+  // The dashboard image follows the physical scroll position independently from the
+  // timed text checkpoints, so its movement can be scrubbed in either direction.
+  const visualProgress = physicalProgress * FULL_CP;
+  const visualLiftProgress = clamp(visualProgress / PHASE.lift, 0, 1);
+  const rawVisualTakeoverProgress = clamp(
+    (visualProgress - PHASE.lift - PHASE.detent) / PHASE.takeover,
+    0,
+    1,
+  );
+  const visualTakeoverProgress = rawVisualTakeoverProgress;
 
   const bandStart = clamp(window.innerWidth * 0.05, 46, 82);
   const bandEnd = clamp(window.innerWidth * 0.03, 28, 42);
-  const visualBandBase = bandStart - liftProgress * (bandStart - bandEnd);
+  const visualBandBase = bandStart - visualLiftProgress * (bandStart - bandEnd);
   const bandBlurStart = clamp(window.innerWidth * 0.026, 28, 42);
   const bandBlurEnd = clamp(window.innerWidth * 0.014, 16, 24);
-  const visualBandBlurBase = bandBlurStart - liftProgress * (bandBlurStart - bandBlurEnd);
+  const visualBandBlurBase = bandBlurStart
+    - visualLiftProgress * (bandBlurStart - bandBlurEnd);
   const isZhHeadline = i18n.locale === "zh" || i18n.locale === "zh-CN";
   const targetGap = isZhHeadline
     ? clamp(window.innerHeight * 0.045, 34, 54)
@@ -329,8 +223,12 @@ function updateTerminalMotion() {
   const centeringLift = Math.max(0, visualTopAfterLift - centeredTop);
   const maxTakeoverLift = Math.max(0, visualTopAfterLift - navHeight - 8);
   const takeoverLift = Math.min(centeringLift, maxTakeoverLift);
-  const motionY = -(liftProgress * liftDistance + takeoverProgress * takeoverLift);
-  const visualTopScreen = visualTop + motionY;
+  const textMotionY = -(liftProgress * liftDistance + takeoverProgress * takeoverLift);
+  const visualMotionY = -(
+    visualLiftProgress * liftDistance
+    + visualTakeoverProgress * takeoverLift
+  );
+  const visualTopScreen = visualTop + visualMotionY;
   const bandSafeRoom = Math.max(0, visualTopScreen - navHeight);
   const bandCompressionLead = clamp(window.innerHeight * 0.03, 22, 36);
   const bandCompression = clamp(
@@ -344,17 +242,22 @@ function updateTerminalMotion() {
   const visualBandTight = visualBand * 0.42;
   const visualBandSoftBlur = visualBandBlur * 0.34;
   const headlineRise = takeoverProgress * (takeoverLift - headline.offsetHeight * 0.35);
-  const visualScale = (1 + liftProgress * 0.12 + takeoverProgress * 0.2) * (1 - exitEase * 0.18);
-  const visualOpacity = clamp(1 - exitProgress / 0.72, 0, 1);
+  const visualScale = (
+    1
+    + visualLiftProgress * 0.12
+    + visualTakeoverProgress * 0.2
+  ) * (1 - exitEase * 0.18);
+  const visualOffsetY = visualMotionY - textMotionY - exitEase * 38;
+  const visualOpacity = 1 - exitEase;
 
   hero.style.setProperty("--home-headline-cover", `${(liftProgress * 100).toFixed(2)}%`);
   hero.style.setProperty("--home-headline-scale", (1 - takeoverProgress * 0.35).toFixed(4));
   hero.style.setProperty("--home-headline-opacity", (1 - takeoverProgress).toFixed(3));
   hero.style.setProperty("--home-headline-y", `${(-headlineRise).toFixed(2)}px`);
-  hero.style.setProperty("--home-motion-y", `${motionY.toFixed(2)}px`);
+  hero.style.setProperty("--home-motion-y", `${textMotionY.toFixed(2)}px`);
   hero.style.setProperty("--home-visual-scale", visualScale.toFixed(4));
   hero.style.setProperty("--home-visual-x", "0px");
-  hero.style.setProperty("--home-visual-y", `${(-exitEase * 38).toFixed(2)}px`);
+  hero.style.setProperty("--home-visual-y", `${visualOffsetY.toFixed(2)}px`);
   hero.style.setProperty("--home-visual-opacity", visualOpacity.toFixed(3));
   hero.style.setProperty("--home-visual-blur", `${(exitEase * 8).toFixed(2)}px`);
   hero.style.setProperty("--home-collapse-progress", "0");
@@ -388,7 +291,7 @@ function updateHomeMotion() {
 }
 
 function requestHomeMotionUpdate() {
-  if (isAutoPlaying || motionFrame) return;
+  if (motionFrame) return;
   motionFrame = window.requestAnimationFrame(() => {
     motionFrame = 0;
     updateHomeMotion();
@@ -400,8 +303,6 @@ onMounted(async () => {
   updateHomeMotion();
   window.addEventListener("scroll", requestHomeMotionUpdate, { passive: true });
   window.addEventListener("resize", requestHomeMotionUpdate);
-  window.addEventListener("wheel", onHeroWheel, { passive: false });
-  window.addEventListener("touchstart", cancelAutoPlay, { passive: true });
 });
 
 onBeforeUnmount(() => {
@@ -410,11 +311,8 @@ onBeforeUnmount(() => {
     motionFrame = 0;
   }
 
-  cancelAutoPlay();
   window.removeEventListener("scroll", requestHomeMotionUpdate);
   window.removeEventListener("resize", requestHomeMotionUpdate);
-  window.removeEventListener("wheel", onHeroWheel);
-  window.removeEventListener("touchstart", cancelAutoPlay);
 });
 
 const stages = [

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, status
 from fastapi import Query
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.cos_service import cos_service
+from app.core.storage_cleanup import enqueue_storage_cleanup, process_pending_cleanup_jobs
 from app.db import models, schemas
 from app.db.database import get_db
 
@@ -158,8 +160,7 @@ async def list_all_resumes_directory(
         # avatar: prefer users.photo; can be empty string
         avatar = getattr(user, "photo", None) or None
         role = int(getattr(resume, "role", None) or getattr(user, "role", 0) or 0)
-        # email is always public in directory
-        email = getattr(resume, "email", None) or getattr(user, "email", None)
+        email = (getattr(resume, "email", None) or getattr(user, "email", None)) if bool(resume.is_public) else None
         # phone is only shown when resume is public
         phone = (getattr(resume, "phone", None) or getattr(user, "phone", None)) if bool(resume.is_public) else None
 
@@ -189,7 +190,7 @@ async def list_all_resumes_directory(
                     job_title=getattr(resume, "job_title", None),
                     department=getattr(resume, "department", None),
                     avatar=avatar,
-                    email=email,
+                    email=None,
                     phone=None,
                     is_public=False,
                     private_hidden=True,
@@ -257,6 +258,7 @@ async def update_my_resume(
 async def upload_my_resume_pdf(
     file: bytes = File(..., description="PDF简历文件"),
     filename: str = Form(..., description="文件名"),
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ) -> schemas.ResumePdfOut:
@@ -288,14 +290,19 @@ async def upload_my_resume_pdf(
         existing.original_filename = filename
         existing.file_size = int(upload_result["size"])
         db.add(existing)
-        db.flush()
+        try:
+            db.flush()
+        except SQLAlchemyError:
+            db.rollback()
+            if upload_result.get("key") and not cos_service.delete_image(upload_result["key"]):
+                enqueue_storage_cleanup(db, cos_key=upload_result["key"], source_table="user_resume_pdfs", source_id=None)
+                db.commit()
+            raise
         db.refresh(existing)
-        # best-effort delete old object (ignore failures)
         if old_key and old_key != existing.cos_key:
-            try:
-                cos_service.delete_image(old_key)
-            except Exception:
-                pass
+            enqueue_storage_cleanup(db, cos_key=old_key, source_table="user_resume_pdfs", source_id=int(existing.id))
+            if background_tasks is not None:
+                background_tasks.add_task(process_pending_cleanup_jobs)
         return schemas.ResumePdfOut.model_validate(existing)
 
     row = models.UserResumePDF(
@@ -306,7 +313,14 @@ async def upload_my_resume_pdf(
         file_size=int(upload_result["size"]),
     )
     db.add(row)
-    db.flush()
+    try:
+        db.flush()
+    except SQLAlchemyError:
+        db.rollback()
+        if upload_result.get("key") and not cos_service.delete_image(upload_result["key"]):
+            enqueue_storage_cleanup(db, cos_key=upload_result["key"], source_table="user_resume_pdfs", source_id=None)
+            db.commit()
+        raise
     db.refresh(row)
     return schemas.ResumePdfOut.model_validate(row)
 

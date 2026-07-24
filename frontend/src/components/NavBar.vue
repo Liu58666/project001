@@ -45,9 +45,8 @@
           {{ t('nav.technology') }} <span class="plus">+</span>
         </button>
         <div :class="['dropdown', 'dropdown--technology', { 'dropdown--open': activeMobileDropdown === 'technology' }]">
-          <a href="/technology?topic=platform-build" class="dropdown-item" @click.prevent="navigateTo('/technology?topic=platform-build')">{{ t('nav.technologyPlatform') }}</a>
-          <a href="/technology?topic=agent-development" class="dropdown-item" @click.prevent="navigateTo('/technology?topic=agent-development')">{{ t('nav.technologyAgents') }}</a>
-          <a href="/technology?topic=data-governance" class="dropdown-item" @click.prevent="navigateTo('/technology?topic=data-governance')">{{ t('nav.technologyRag') }}</a>
+          <a href="/#aios-showcase" class="dropdown-item" @click.prevent="navigateTo('/#aios-showcase')">{{ t('nav.technologyAios') }}</a>
+          <a href="/#nemo-one" class="dropdown-item" @click.prevent="navigateTo('/#nemo-one')">{{ t('nav.technologyNemo') }}</a>
         </div>
       </div>
 
@@ -433,6 +432,11 @@ onBeforeUnmount(() => {
 
 .dropdown--technology {
   max-width: 300px;
+}
+
+.dropdown--technology .dropdown-item {
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+  font-weight: 400;
 }
 
 .dropdown--company {

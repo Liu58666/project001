@@ -25,8 +25,14 @@ class COSService:
         self.region = settings.cos_region
         self.bucket = settings.cos_bucket
         self.domain = settings.cos_domain
+        self.enabled = settings.cos_enabled
 
-        # 初始化 COS 客户端
+        self.client = None
+        if not self.enabled:
+            return
+        if not all([self.secret_id, self.secret_key, self.bucket, self.domain]):
+            raise RuntimeError("COS_ENABLED=true requires COS_SECRET_ID, COS_SECRET_KEY, COS_BUCKET, and COS_DOMAIN")
+
         config = CosConfig(
             Region=self.region,
             SecretId=self.secret_id,
@@ -34,6 +40,10 @@ class COSService:
             Scheme="https",
         )
         self.client = CosS3Client(config)
+
+    def _ensure_enabled(self) -> None:
+        if not self.enabled or self.client is None:
+            raise RuntimeError("COS service is disabled")
 
     def _generate_object_key(
         self,
@@ -109,6 +119,7 @@ class COSService:
             CosServiceError: COS 服务错误
         """
         try:
+            self._ensure_enabled()
             # 处理图片（如果需要压缩）
             image = Image.open(BytesIO(file_content))
             original_format = image.format or "JPEG"
@@ -179,6 +190,7 @@ class COSService:
         """
         # 复用同样的处理逻辑
         try:
+            self._ensure_enabled()
             image = Image.open(BytesIO(file_content))
             width, height = image.size
 
@@ -242,6 +254,7 @@ class COSService:
         对象键格式：tasks/{task_id}/{user_id}/{year}/{month}/{uuid}.{ext}
         """
         try:
+            self._ensure_enabled()
             image = Image.open(BytesIO(file_content))
             width, height = image.size
 
@@ -300,6 +313,7 @@ class COSService:
         对象键格式：users/{user_id}/resume_pdf/{year}/{month}/{uuid}.pdf
         """
         try:
+            self._ensure_enabled()
             # Ensure .pdf suffix
             filename = original_filename or "resume.pdf"
             if not Path(filename).suffix:
@@ -341,9 +355,15 @@ class COSService:
             bool: 是否删除成功
         """
         try:
+            self._ensure_enabled()
             self.client.delete_object(Bucket=self.bucket, Key=object_key)
             return True
-        except (CosClientError, CosServiceError):
+        except (CosClientError, CosServiceError) as exc:
+            status_code = getattr(exc, "get_status_code", lambda: None)()
+            if int(status_code or 0) == 404:
+                return True
+            return False
+        except RuntimeError:
             return False
 
     def get_image_url(self, object_key: str) -> str:

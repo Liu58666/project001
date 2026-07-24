@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Response, status
 from sqlalchemy import and_, func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.cos_service import cos_service
+from app.core.storage_cleanup import enqueue_storage_cleanup, process_pending_cleanup_jobs
 from app.db import models, schemas
 from app.db.database import get_db
 
@@ -122,6 +124,7 @@ async def admin_list_tasks(
 @admin_router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def admin_delete_task(
     task_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ) -> Response:
@@ -148,16 +151,12 @@ async def admin_delete_task(
     )
     cos_keys = [str(k) for k in db.scalars(key_stmt).all()]
 
-    # Best-effort COS cleanup
     for k in cos_keys:
-        try:
-            cos_service.delete_image(k)
-        except Exception:
-            # ignore COS errors; proceed with DB delete
-            pass
+        enqueue_storage_cleanup(db, cos_key=k, source_table="task_submission_images")
 
     db.delete(task)
     db.flush()
+    background_tasks.add_task(process_pending_cleanup_jobs)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -441,7 +440,14 @@ async def upload_submission_image(
         height=upload_result["height"],
     )
     db.add(row)
-    db.flush()
+    try:
+        db.flush()
+    except SQLAlchemyError:
+        db.rollback()
+        if not cos_service.delete_image(upload_result["key"]):
+            enqueue_storage_cleanup(db, cos_key=upload_result["key"], source_table="task_submission_images")
+            db.commit()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="图片保存失败")
     db.refresh(row)
 
     return schemas.TaskSubmissionImageUploadResponse(
@@ -459,6 +465,7 @@ async def upload_submission_image(
 async def delete_submission_image(
     task_id: int,
     image_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ) -> Response:
@@ -473,12 +480,15 @@ async def delete_submission_image(
     if int(submission.user_id) != int(current_user.id) and int(current_user.role) < 3:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权删除此图片")
 
-    try:
-        cos_service.delete_image(image.cos_key)
-        db.delete(image)
-        db.flush()
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"删除失败：{str(e)}")
+    enqueue_storage_cleanup(
+        db,
+        cos_key=image.cos_key,
+        source_table="task_submission_images",
+        source_id=int(image.id),
+    )
+    db.delete(image)
+    db.flush()
+    background_tasks.add_task(process_pending_cleanup_jobs)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

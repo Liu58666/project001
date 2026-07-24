@@ -1,13 +1,6 @@
 // src/services/imageService.js
 // 图片上传服务
-
-function getStoredToken() {
-  return (
-    localStorage.getItem('access_token') ||
-    sessionStorage.getItem('access_token') ||
-    ''
-  )
-}
+import { apiRequest } from './apiClient'
 
 /**
  * 上传图片
@@ -17,11 +10,6 @@ function getStoredToken() {
  * @returns {Promise<Object>} 上传结果
  */
 export async function uploadImage(file, position = 'content', newsId = null) {
-  const token = getStoredToken()
-  if (!token) {
-    throw new Error('未登录，请先登录')
-  }
-
   const formData = new FormData()
   formData.append('file', file)
   formData.append('position', position)
@@ -30,39 +18,7 @@ export async function uploadImage(file, position = 'content', newsId = null) {
     formData.append('news_id', String(newsId))
   }
 
-  const res = await fetch('/api/images/upload', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  })
-
-  let data = null
-  try {
-    data = await res.json()
-  } catch {
-    data = null
-  }
-
-  if (!res.ok) {
-    // 422 错误通常包含详细的验证信息
-    let msg = `上传失败 (${res.status})`
-    if (data?.detail) {
-      if (typeof data.detail === 'string') {
-        msg = data.detail
-      } else if (Array.isArray(data.detail)) {
-        // FastAPI 验证错误格式: [{loc: [...], msg: "...", type: "..."}]
-        msg = data.detail.map(e => `${e.loc?.join('.')}: ${e.msg}`).join('; ')
-      } else {
-        msg = JSON.stringify(data.detail)
-      }
-    }
-    console.error('Image upload error:', data)
-    throw new Error(msg)
-  }
-
-  return data
+  return await apiRequest('POST', '/api/images/upload', { formData })
 }
 
 /**
@@ -71,21 +27,7 @@ export async function uploadImage(file, position = 'content', newsId = null) {
  * @returns {Promise<Array>} 图片列表
  */
 export async function listImages({ position, newsId, limit = 50, offset = 0 } = {}) {
-  const url = new URL('/api/images', window.location.origin)
-  if (position) url.searchParams.set('position', position)
-  if (newsId) url.searchParams.set('news_id', String(newsId))
-  url.searchParams.set('limit', String(limit))
-  url.searchParams.set('offset', String(offset))
-
-  const res = await fetch(url.toString(), {
-    headers: { Accept: 'application/json' },
-  })
-
-  if (!res.ok) {
-    throw new Error(`获取图片列表失败 (${res.status})`)
-  }
-
-  return await res.json()
+  return await apiRequest('GET', '/api/images', { params: { position, news_id: newsId, limit, offset } })
 }
 
 /**
@@ -94,28 +36,7 @@ export async function listImages({ position, newsId, limit = 50, offset = 0 } = 
  * @returns {Promise<void>}
  */
 export async function deleteImage(imageId) {
-  const token = getStoredToken()
-  if (!token) {
-    throw new Error('未登录，请先登录')
-  }
-
-  const res = await fetch(`/api/images/${imageId}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
-  if (!res.ok && res.status !== 204) {
-    let data = null
-    try {
-      data = await res.json()
-    } catch {
-      data = null
-    }
-    const msg = data?.detail || `删除失败 (${res.status})`
-    throw new Error(msg)
-  }
+  return await apiRequest('DELETE', `/api/images/${encodeURIComponent(imageId)}`)
 }
 
 /**
@@ -125,33 +46,7 @@ export async function deleteImage(imageId) {
  * @returns {Promise<Object>} 更新后的图片信息
  */
 export async function linkImageToNews(imageId, newsId) {
-  const token = getStoredToken()
-  if (!token) {
-    throw new Error('未登录，请先登录')
-  }
-
   const formData = new FormData()
   formData.append('news_id', String(newsId))
-
-  const res = await fetch(`/api/images/${imageId}/link-news`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  })
-
-  let data = null
-  try {
-    data = await res.json()
-  } catch {
-    data = null
-  }
-
-  if (!res.ok) {
-    const msg = data?.detail || `关联失败 (${res.status})`
-    throw new Error(msg)
-  }
-
-  return data
+  return await apiRequest('PUT', `/api/images/${encodeURIComponent(imageId)}/link-news`, { formData })
 }

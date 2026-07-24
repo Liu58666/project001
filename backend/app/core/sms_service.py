@@ -35,6 +35,12 @@ def send_sms_code(phone: str, code: str) -> bool:
     - SMS_TEMPLATE_ID: 短信模板 ID
     - SMS_REGION: 服务区域（默认 ap-guangzhou）
     """
+    masked_phone = _mask_phone(phone)
+
+    if not settings.sms_enabled:
+        logger.info("SMS disabled; verification code generated for %s", masked_phone)
+        return True
+
     # 检查配置是否完整
     if not all([
         settings.sms_secret_id,
@@ -98,11 +104,14 @@ def send_sms_code(phone: str, code: str) -> bool:
         if resp.SendStatusSet and len(resp.SendStatusSet) > 0:
             status = resp.SendStatusSet[0]
             if status.Code == "Ok":
-                logger.info(f"SMS sent successfully to {phone}, code: {code}")
+                logger.info("SMS sent successfully to %s", masked_phone)
                 return True
             else:
                 logger.error(
-                    f"Failed to send SMS to {phone}: Code={status.Code}, Message={status.Message}"
+                    "Failed to send SMS to %s: Code=%s, Message=%s",
+                    masked_phone,
+                    status.Code,
+                    status.Message,
                 )
                 return False
         else:
@@ -110,9 +119,17 @@ def send_sms_code(phone: str, code: str) -> bool:
             return False
 
     except TencentCloudSDKException as e:
-        logger.error(f"TencentCloud SDK error when sending SMS to {phone}: {e}")
+        logger.error("TencentCloud SDK error when sending SMS to %s: %s", masked_phone, e)
         return False
     except Exception as e:
-        logger.error(f"Unexpected error when sending SMS to {phone}: {e}", exc_info=True)
+        logger.error("Unexpected error when sending SMS to %s: %s", masked_phone, e, exc_info=True)
         return False
+
+
+def _mask_phone(phone: str) -> str:
+    raw = str(phone or "")
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if len(digits) <= 4:
+        return "***"
+    return f"{digits[:3]}****{digits[-4:]}"
 

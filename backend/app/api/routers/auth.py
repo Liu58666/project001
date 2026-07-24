@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -177,7 +178,13 @@ async def refresh_access_token(
     now = datetime.utcnow()
     incoming_hash = hash_token(raw_refresh)
 
-    stmt = select(models.RefreshToken).where(models.RefreshToken.token_hash == incoming_hash)
+    # Lock this refresh-token row until the replacement is flushed.  A second
+    # concurrent request then sees revoked_at and cannot rotate it again.
+    stmt = (
+        select(models.RefreshToken)
+        .where(models.RefreshToken.token_hash == incoming_hash)
+        .with_for_update()
+    )
     stored = db.scalar(stmt)
 
     if stored is None:
@@ -333,6 +340,12 @@ async def upload_my_photo(
     current_user.photo = upload_result["url"]
     db.add(current_user)
 
-    db.flush()
+    try:
+        db.flush()
+    except SQLAlchemyError:
+        db.rollback()
+        # The object is not referenced if the user update fails.
+        cos_service.delete_image(upload_result["key"])
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="头像保存失败")
     return schemas.UserOut.model_validate(current_user)
 
